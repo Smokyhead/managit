@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:managit/pages/Connection/Connection.dart';
 
 void main() {
   runApp(const MyApp());
@@ -13,7 +14,7 @@ class MyApp extends StatelessWidget {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Manag''IT',
-      home: Scaffold(),
+      home: Login(),
     );
   }
 }
