@@ -26,84 +26,76 @@ class _ResetPassword extends State<ResetPassword> {
         ),
       ),
       backgroundColor: Colors.white,
-      body: Container(
-        decoration: const BoxDecoration(
-          image: DecorationImage(
-              image: AssetImage('assets/images/Untitled design.jpg'),
-              fit: BoxFit.cover,
-              opacity: 0.5),
-        ),
-        child: SizedBox(
-          height: size.height,
-          width: double.infinity,
-          child: Stack(
-            alignment: Alignment.center,
-            children: <Widget>[
-              SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                child: Column(
-                  children: <Widget>[
-                    Container(
-                      margin: const EdgeInsets.only(
-                          right: 20, left: 20, bottom: 100),
-                      child: const Text(
-                        "Récuperer votre mot de passe",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 26,
-                            color: Colors.indigo),
+      body: SizedBox(
+        height: size.height,
+        width: double.infinity,
+        child: Stack(
+          alignment: Alignment.center,
+          children: <Widget>[
+            SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: Column(
+                children: <Widget>[
+                  Container(
+                    margin: const EdgeInsets.only(
+                        right: 20, left: 20, bottom: 100),
+                    child: const Text(
+                      "Récuperer votre mot de passe",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 26,
+                          color: Colors.indigo),
+                    ),
+                  ),
+                  Container(
+                    margin:
+                        const EdgeInsets.only(right: 5, left: 5, bottom: 25),
+                    child: const Text(
+                      "Veuillez saisir votre adresse email",
+                      style: TextStyle(
+                        fontSize: 17,
                       ),
                     ),
-                    Container(
-                      margin:
-                          const EdgeInsets.only(right: 5, left: 5, bottom: 25),
-                      child: const Text(
-                        "Veuillez saisir votre adresse email",
-                        style: TextStyle(
-                          fontSize: 17,
+                  ),
+                  TextFieldContainer(
+                    child: TextFormField(
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        hintText: "Email",
+                        border: InputBorder.none,
+                      ),
+                      controller: emailController,
+                    ),
+                  ),
+                  Container(
+                    margin: const EdgeInsetsDirectional.only(top: 50),
+                    width: 150,
+                    height: 50,
+                    child: TextButton(
+                      onPressed: () {},
+                      style: ButtonStyle(
+                        elevation: WidgetStateProperty.all(5),
+                        backgroundColor:
+                            WidgetStateProperty.all(Colors.indigo),
+                        foregroundColor:
+                            WidgetStateProperty.all(Colors.white),
+                        shape: WidgetStateProperty.all(
+                          RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20)),
                         ),
                       ),
+                      child: const Text("Valider",
+                          style: TextStyle(fontSize: 19)),
                     ),
-                    TextFieldContainer(
-                      child: TextFormField(
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: const InputDecoration(
-                          hintText: "Email",
-                          border: InputBorder.none,
-                        ),
-                        controller: emailController,
-                      ),
-                    ),
-                    Container(
-                      margin: const EdgeInsetsDirectional.only(top: 50),
-                      width: 150,
-                      height: 50,
-                      child: TextButton(
-                        onPressed: () {},
-                        style: ButtonStyle(
-                          elevation: WidgetStateProperty.all(5),
-                          backgroundColor:
-                              WidgetStateProperty.all(Colors.indigo),
-                          foregroundColor:
-                              WidgetStateProperty.all(Colors.white),
-                          shape: WidgetStateProperty.all(
-                            RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20)),
-                          ),
-                        ),
-                        child: const Text("Valider",
-                            style: TextStyle(fontSize: 19)),
-                      ),
-                    ),
-                    const SizedBox(
-                      height: 50,
-                    )
-                  ],
-                ),
+                  ),
+                  const SizedBox(
+                    height: 50,
+                  )
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

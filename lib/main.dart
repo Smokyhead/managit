@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:managit/pages/Connection/Connection.dart';
+import 'package:managit/pages/employee/leave_request.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Manag''IT',
-      home: Login(),
+      home: LeaveRequest(),
     );
   }
 }
