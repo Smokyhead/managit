@@ -76,6 +76,7 @@ class AdminAppBarState extends State<AdminAppBar> {
         ],
       ),
       drawer: Drawer(
+        width: size.width * 0.7,
         backgroundColor: Colors.indigo,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
