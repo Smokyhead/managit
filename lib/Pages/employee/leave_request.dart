@@ -79,7 +79,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
         title: const Text('Demande de congé'),
         centerTitle: true,
         leading: IconButton(
-            icon: const Icon(IconlyLight.close_square), onPressed: () {}),
+            icon: const Icon(Icons.arrow_back), onPressed: () {Navigator.of(context).pop();}),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
