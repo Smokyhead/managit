@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:managit/pages/admin/absence_management.dart';
 import 'package:managit/pages/admin/daily_attendance.dart';
@@ -19,7 +20,16 @@ class AdminAppBar extends StatefulWidget {
 }
 
 class AdminAppBarState extends State<AdminAppBar> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   int _selectedPageIndex = 0;
+
+  Future<void> signOut() async {
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      print(e.toString());
+    }
+  }
 
   final List<Widget> _pages = [
     const Dashboard(),
@@ -175,16 +185,36 @@ class AdminAppBarState extends State<AdminAppBar> {
                 )
               ],
             ),
-            ListTile(
-              title: Text('Paramêtres',
-                  style: TextStyle(
-                      color: _selectedPageIndex == 9 ? null : Colors.white)),
-              tileColor: _selectedPageIndex == 9 ? Colors.grey[300] : null,
-              trailing: const Icon(
-                Icons.settings,
-                color: Colors.white,
-              ),
-              onTap: () => _selectPage(9),
+            Column(
+              children: [
+                ListTile(
+                  title: Text('Paramêtres',
+                      style: TextStyle(
+                          color:
+                              _selectedPageIndex == 9 ? null : Colors.white)),
+                  tileColor: _selectedPageIndex == 9 ? Colors.grey[300] : null,
+                  trailing: const Icon(
+                    Icons.settings,
+                    color: Colors.white,
+                  ),
+                  onTap: () => _selectPage(9),
+                ),
+                ListTile(
+                  title: Text('Déconnexion',
+                      style: TextStyle(
+                          color: _selectedPageIndex == 9
+                              ? null
+                              : const Color.fromARGB(255, 255, 92, 92))),
+                  tileColor: _selectedPageIndex == 9 ? Colors.grey[300] : null,
+                  trailing: const Icon(
+                    Icons.logout,
+                    color: Color.fromARGB(255, 255, 92, 92),
+                  ),
+                  onTap: () {
+                    signOut();
+                  },
+                ),
+              ],
             ),
           ],
         ),
