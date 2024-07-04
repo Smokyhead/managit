@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:managit/pages/admin/admin_appbar.dart';
+import 'package:managit/pages/connection/connection.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,7 +14,7 @@ class MyApp extends StatelessWidget {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Manag''IT',
-      home: AdminAppBar(),
+      home: Login(),
     );
   }
 }

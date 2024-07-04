@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
 import 'package:managit/pages/Connection/password_recovery.dart';
+import 'package:managit/pages/admin/admin_appbar.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -81,7 +82,11 @@ class LoginState extends State<Login> {
               width: size.width * 0.8,
               height: 60,
               child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return const AdminAppBar();
+                  }));
+                  },
                   style: ButtonStyle(
                     elevation: WidgetStateProperty.all(10),
                     backgroundColor: WidgetStateProperty.all(Colors.indigo),

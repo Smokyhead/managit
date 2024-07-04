@@ -12,7 +12,7 @@ class _GlobalLeaveOverviewState extends State<GlobalLeaveOverview> {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: Center(
-        child: Text('Global Leave Overview Page'),
+        child: Text('Global Leave Overview'),
       ),
     );
   }
