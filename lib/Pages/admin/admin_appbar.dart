@@ -11,6 +11,7 @@ import 'package:managit/pages/admin/penalty_management.dart';
 import 'package:managit/pages/admin/settings.dart';
 import 'package:managit/pages/admin/tardiness_management.dart';
 import 'package:managit/pages/admin/user_management.dart';
+import 'package:managit/pages/connection/connection.dart';
 
 class AdminAppBar extends StatefulWidget {
   const AdminAppBar({super.key});
@@ -24,9 +25,23 @@ class AdminAppBarState extends State<AdminAppBar> {
   int _selectedPageIndex = 0;
 
   Future<void> signOut() async {
+    showDialog(
+        context: (context),
+        builder: (BuildContext context) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Colors.indigo,
+            ),
+          );
+        });
     try {
       await _auth.signOut();
+      // ignore: use_build_context_synchronously
+      Navigator.push(context, MaterialPageRoute(builder: (context) {
+        return const Login();
+      }));
     } catch (e) {
+      // ignore: avoid_print
       print(e.toString());
     }
   }
@@ -34,26 +49,26 @@ class AdminAppBarState extends State<AdminAppBar> {
   final List<Widget> _pages = [
     const Dashboard(),
     const MonthSythesis(),
+    const DailyAttendance(),
     const GlobalLeaveOverview(),
     const GlobalPermissionOverview(),
     const UserManagement(),
     const AbsenceManagement(),
     const TardinessManagement(),
     const PenaltyManagement(),
-    const DailyAttendance(),
     const Settings()
   ];
 
   final List<String> _pageTitles = [
     'Dashboard',
     'Sythèse de mois',
+    'Pointage quotidient',
     'Vue globale de congés',
     'Vue globale de permissions',
     'Gestion utilisateurs',
     'Gestion des absences',
     'Gestion des retards',
     'Gestion des pénalités',
-    'Pointage quotidient',
     'Paramêtres'
   ];
 
@@ -128,7 +143,7 @@ class AdminAppBarState extends State<AdminAppBar> {
                   onTap: () => _selectPage(1),
                 ),
                 ListTile(
-                  title: Text('Vue globale de congés',
+                  title: Text('Pointage quotidient',
                       style: TextStyle(
                           color:
                               _selectedPageIndex == 2 ? null : Colors.white)),
@@ -136,7 +151,7 @@ class AdminAppBarState extends State<AdminAppBar> {
                   onTap: () => _selectPage(2),
                 ),
                 ListTile(
-                  title: Text('Vue globale de permissions',
+                  title: Text('Vue globale de congés',
                       style: TextStyle(
                           color:
                               _selectedPageIndex == 3 ? null : Colors.white)),
@@ -144,7 +159,7 @@ class AdminAppBarState extends State<AdminAppBar> {
                   onTap: () => _selectPage(3),
                 ),
                 ListTile(
-                  title: Text('Gestion des utilisateurs',
+                  title: Text('Vue globale de permissions',
                       style: TextStyle(
                           color:
                               _selectedPageIndex == 4 ? null : Colors.white)),
@@ -152,7 +167,7 @@ class AdminAppBarState extends State<AdminAppBar> {
                   onTap: () => _selectPage(4),
                 ),
                 ListTile(
-                  title: Text('Gestion des absences',
+                  title: Text('Gestion des utilisateurs',
                       style: TextStyle(
                           color:
                               _selectedPageIndex == 5 ? null : Colors.white)),
@@ -160,7 +175,7 @@ class AdminAppBarState extends State<AdminAppBar> {
                   onTap: () => _selectPage(5),
                 ),
                 ListTile(
-                  title: Text('Gestion des retards',
+                  title: Text('Gestion des absences',
                       style: TextStyle(
                           color:
                               _selectedPageIndex == 6 ? null : Colors.white)),
@@ -168,7 +183,7 @@ class AdminAppBarState extends State<AdminAppBar> {
                   onTap: () => _selectPage(6),
                 ),
                 ListTile(
-                  title: Text('Gestion des pénalités',
+                  title: Text('Gestion des retards',
                       style: TextStyle(
                           color:
                               _selectedPageIndex == 7 ? null : Colors.white)),
@@ -176,7 +191,7 @@ class AdminAppBarState extends State<AdminAppBar> {
                   onTap: () => _selectPage(7),
                 ),
                 ListTile(
-                  title: Text('Pointage quotidient',
+                  title: Text('Gestion des pénalités',
                       style: TextStyle(
                           color:
                               _selectedPageIndex == 8 ? null : Colors.white)),
@@ -202,13 +217,12 @@ class AdminAppBarState extends State<AdminAppBar> {
                 ListTile(
                   title: Text('Déconnexion',
                       style: TextStyle(
-                          color: _selectedPageIndex == 9
-                              ? null
-                              : const Color.fromARGB(255, 255, 92, 92))),
+                          color:
+                              _selectedPageIndex == 9 ? null : Colors.white)),
                   tileColor: _selectedPageIndex == 9 ? Colors.grey[300] : null,
                   trailing: const Icon(
                     Icons.logout,
-                    color: Color.fromARGB(255, 255, 92, 92),
+                    color: Colors.white,
                   ),
                   onTap: () {
                     signOut();

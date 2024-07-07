@@ -1,4 +1,6 @@
-// ignore_for_file: file_names
+// ignore_for_file: file_names, use_build_context_synchronously, avoid_print
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
@@ -13,6 +15,7 @@ class Login extends StatefulWidget {
 }
 
 class LoginState extends State<Login> {
+  final appCheck = FirebaseAppCheck.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
@@ -20,7 +23,33 @@ class LoginState extends State<Login> {
   String _errorMessage = '';
   bool hidePassword = true;
 
+  Future<String> getRole(String id) async {
+    late Map<String, dynamic> data;
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('User').doc(id).get();
+      if (snapshot.exists) {
+        data = snapshot.data() as Map<String, dynamic>;
+      } else {
+        print('user not found');
+      }
+    } catch (e) {
+      print(e.toString());
+      print("something went wrong!!");
+    }
+    return data['role'];
+  }
+
   Future<User?> signInWithEmailPassword(String email, String password) async {
+    showDialog(
+        context: (context),
+        builder: (BuildContext context) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: Colors.indigo,
+            ),
+          );
+        });
     try {
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: email,
@@ -28,10 +57,17 @@ class LoginState extends State<Login> {
       );
       return userCredential.user;
     } catch (e) {
-      // ignore: avoid_print
       print(e.toString());
+
       return null;
     }
+  }
+
+  bool diff(String s1, s2) {
+    if (s1 == s2) {
+      return false;
+    }
+    return true;
   }
 
   void _signIn() async {
@@ -41,14 +77,23 @@ class LoginState extends State<Login> {
         _passwordController.text,
       );
       if (user != null) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const AdminAppBar()),
-        );
+        print(await getRole(user.uid));
+        if (await getRole(user.uid) == 'admin') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminAppBar()),
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const Scaffold()),
+          );
+        }
       } else {
         setState(() {
           _errorMessage = 'Incorrect email or password';
         });
+        Navigator.of(context).pop();
       }
     }
   }
@@ -169,10 +214,26 @@ class LoginState extends State<Login> {
                 )),
             const SizedBox(height: 10),
             TextButton(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) {
-                    return const ResetPassword();
-                  }));
+                onPressed: () async {
+                  late Map<String, dynamic> data;
+                  try {
+                    final snapshot = await FirebaseFirestore.instance
+                        .collection('User')
+                        .doc('qyy9fXHjSycUddJccuxCMCNA0dI2')
+                        .get();
+                    if (snapshot.exists) {
+                      data = snapshot.data() as Map<String, dynamic>;
+                      print("data ====== ${data.toString()}");
+                    } else {
+                      print('user not found');
+                    }
+                  } catch (e) {
+                    print(e.toString());
+                    print("something went wrong!!");
+                  }
+                  // Navigator.push(context, MaterialPageRoute(builder: (context) {
+                  //   return const ResetPassword();
+                  // }));
                 },
                 child: const Text(
                   'Récupérez Mot de passe',
