@@ -4,8 +4,9 @@ import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
-import 'package:managit/pages/Connection/password_recovery.dart';
 import 'package:managit/pages/admin/admin_appbar.dart';
+import 'package:managit/pages/connection/password_recovery.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -22,6 +23,8 @@ class LoginState extends State<Login> {
   final TextEditingController _passwordController = TextEditingController();
   String _errorMessage = '';
   bool hidePassword = true;
+  late User appUser;
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
 
   Future<String> getRole(String id) async {
     late Map<String, dynamic> data;
@@ -32,6 +35,8 @@ class LoginState extends State<Login> {
         data = snapshot.data() as Map<String, dynamic>;
       } else {
         print('user not found');
+        _errorMessage = 'Une erreur est survenue';
+        Navigator.of(context).pop();
       }
     } catch (e) {
       print(e.toString());
@@ -58,16 +63,11 @@ class LoginState extends State<Login> {
       return userCredential.user;
     } catch (e) {
       print(e.toString());
+      _errorMessage = 'Une erreur est survenue';
+      Navigator.of(context).pop();
 
       return null;
     }
-  }
-
-  bool diff(String s1, s2) {
-    if (s1 == s2) {
-      return false;
-    }
-    return true;
   }
 
   void _signIn() async {
@@ -77,7 +77,11 @@ class LoginState extends State<Login> {
         _passwordController.text,
       );
       if (user != null) {
+        final SharedPreferences prefs = await _prefs;
+        prefs.setString('uid', user.uid);
+        print(prefs.getString('uid'));
         print(await getRole(user.uid));
+        appUser = user;
         if (await getRole(user.uid) == 'admin') {
           Navigator.push(
             context,
@@ -214,26 +218,10 @@ class LoginState extends State<Login> {
                 )),
             const SizedBox(height: 10),
             TextButton(
-                onPressed: () async {
-                  late Map<String, dynamic> data;
-                  try {
-                    final snapshot = await FirebaseFirestore.instance
-                        .collection('User')
-                        .doc('qyy9fXHjSycUddJccuxCMCNA0dI2')
-                        .get();
-                    if (snapshot.exists) {
-                      data = snapshot.data() as Map<String, dynamic>;
-                      print("data ====== ${data.toString()}");
-                    } else {
-                      print('user not found');
-                    }
-                  } catch (e) {
-                    print(e.toString());
-                    print("something went wrong!!");
-                  }
-                  // Navigator.push(context, MaterialPageRoute(builder: (context) {
-                  //   return const ResetPassword();
-                  // }));
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return const ResetPassword();
+                  }));
                 },
                 child: const Text(
                   'Récupérez Mot de passe',
