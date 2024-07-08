@@ -140,10 +140,10 @@ class LoginState extends State<Login> {
                       child: TextFormField(
                         validator: (value) {
                           if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
+                            return 'Veuillez entrer votre adresse e-mail';
                           }
                           if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                            return 'Please enter a valid email address';
+                            return 'Veuillez verifier votre e-mail';
                           }
                           return null;
                         },
@@ -163,7 +163,7 @@ class LoginState extends State<Login> {
                         child: TextFormField(
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
+                          return 'Veuillez entrer votre mot de passe';
                         }
                         return null;
                       },
