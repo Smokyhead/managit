@@ -10,11 +10,12 @@ class DailyAttendance extends StatefulWidget {
 
 class _DailyAttendanceState extends State<DailyAttendance> {
   final TextEditingController _date = TextEditingController();
-  final String dateTime = DateFormat('dd/mm/yyy').format(DateTime.now());
+  final String dateTime = DateFormat('dd/MM/yyy').format(DateTime.now());
 
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
+    _date.text = DateFormat('dd/MM/yyy').format(DateTime.now());
     return Scaffold(
       body: Column(
         children: [
@@ -22,20 +23,23 @@ class _DailyAttendanceState extends State<DailyAttendance> {
             padding: EdgeInsets.all(size.width * 0.05),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Text(
-                  'Date',
-                  style: TextStyle(fontSize: size.width * 0.05),
-                ),
                 SizedBox(
                   width: size.width * 0.1,
                 ),
                 Container(
-                  color: const Color.fromARGB(255, 223, 196, 196),
-                  height: size.height * 0.05,
-                  width: size.width * 0.4,
+                  color: const Color.fromARGB(255, 211, 211, 211),
+                  height: size.height * 0.06,
+                  width: size.width * 0.35,
                   child: TextField(
-                    decoration: InputDecoration(label: Text(dateTime)),
+                    textAlignVertical: TextAlignVertical.center,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontWeight: FontWeight.w500),
+                    decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        label: Text('Date'),
+                        alignLabelWithHint: false),
                     controller: _date,
                     readOnly: true,
                   ),
