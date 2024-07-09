@@ -79,8 +79,11 @@ class _LeaveRequestState extends State<LeaveRequest> {
         title: const Text('Demande de congé'),
         centerTitle: true,
         leading: IconButton(
-            icon: const Icon(Icons.arrow_back), onPressed: () {Navigator.of(context).pop();}),
-        backgroundColor: Colors.indigo,
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.of(context).pop();
+            }),
+        backgroundColor: const Color.fromARGB(255, 30, 60, 100),
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -165,7 +168,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                         side: WidgetStateProperty.all(
                                             const BorderSide(
                                                 style: BorderStyle.solid,
-                                                color: Colors.indigo)),
+                                                color: Color.fromARGB(
+                                                    255, 30, 60, 100))),
                                         elevation: WidgetStateProperty.all(6),
                                         backgroundColor:
                                             WidgetStateProperty.all(
@@ -173,7 +177,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                                     255, 224, 227, 241)),
                                         foregroundColor:
                                             WidgetStateProperty.all(
-                                                Colors.indigo),
+                                                const Color.fromARGB(
+                                                    255, 30, 60, 100)),
                                         shape: WidgetStateProperty.all(
                                           RoundedRectangleBorder(
                                               borderRadius:
@@ -244,7 +249,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                             side: WidgetStateProperty.all(
                                                 const BorderSide(
                                                     style: BorderStyle.solid,
-                                                    color: Colors.indigo)),
+                                                    color: Color.fromARGB(
+                                                        255, 30, 60, 100))),
                                             elevation:
                                                 WidgetStateProperty.all(6),
                                             backgroundColor:
@@ -253,7 +259,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                                         255, 224, 227, 241)),
                                             foregroundColor:
                                                 WidgetStateProperty.all(
-                                                    Colors.indigo),
+                                                    const Color.fromARGB(
+                                                        255, 30, 60, 100)),
                                             shape: WidgetStateProperty.all(
                                               RoundedRectangleBorder(
                                                   borderRadius:
@@ -326,7 +333,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                             side: WidgetStateProperty.all(
                                                 const BorderSide(
                                                     style: BorderStyle.solid,
-                                                    color: Colors.indigo)),
+                                                    color: Color.fromARGB(
+                                                        255, 30, 60, 100))),
                                             elevation:
                                                 WidgetStateProperty.all(6),
                                             backgroundColor:
@@ -335,7 +343,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                                         255, 224, 227, 241)),
                                             foregroundColor:
                                                 WidgetStateProperty.all(
-                                                    Colors.indigo),
+                                                    const Color.fromARGB(
+                                                        255, 30, 60, 100)),
                                             shape: WidgetStateProperty.all(
                                               RoundedRectangleBorder(
                                                   borderRadius:

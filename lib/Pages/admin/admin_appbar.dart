@@ -30,7 +30,7 @@ class AdminAppBarState extends State<AdminAppBar> {
         builder: (BuildContext context) {
           return const Center(
             child: CircularProgressIndicator(
-              color: Colors.indigo,
+              color: Color.fromARGB(255, 30, 60, 100),
             ),
           );
         });
@@ -84,7 +84,7 @@ class AdminAppBarState extends State<AdminAppBar> {
     Size size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.indigo,
+        backgroundColor: const Color.fromARGB(255, 30, 60, 100),
         foregroundColor: Colors.white,
         title: Text(
           _pageTitles[_selectedPageIndex],
@@ -102,7 +102,7 @@ class AdminAppBarState extends State<AdminAppBar> {
       ),
       drawer: Drawer(
         width: size.width * 0.7,
-        backgroundColor: Colors.indigo,
+        backgroundColor: const Color.fromARGB(255, 30, 60, 100),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

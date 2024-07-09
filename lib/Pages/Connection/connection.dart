@@ -51,7 +51,7 @@ class LoginState extends State<Login> {
         builder: (BuildContext context) {
           return const Center(
             child: CircularProgressIndicator(
-              color: Colors.indigo,
+              color: Color.fromARGB(255, 30, 60, 100),
             ),
           );
         });
@@ -117,7 +117,7 @@ class LoginState extends State<Login> {
               "Connectez-vous",
               style: TextStyle(
                   fontSize: 30,
-                  color: Colors.indigo,
+                  color: Color.fromARGB(255, 30, 60, 100),
                   fontWeight: FontWeight.bold),
             ),
             const SizedBox(
@@ -153,7 +153,7 @@ class LoginState extends State<Login> {
                             border: InputBorder.none,
                             icon: Icon(
                               IconlyLight.profile,
-                              color: Colors.indigo,
+                              color: Color.fromARGB(255, 30, 60, 100),
                             )),
                         controller: _emailController,
                       ),
@@ -172,7 +172,7 @@ class LoginState extends State<Login> {
                       decoration: InputDecoration(
                         icon: const Icon(
                           IconlyLight.lock,
-                          color: Colors.indigo,
+                          color: Color.fromARGB(255, 30, 60, 100),
                         ),
                         suffixIcon: IconButton(
                             icon: Icon(
@@ -185,7 +185,7 @@ class LoginState extends State<Login> {
                                 hidePassword = !hidePassword;
                               });
                             },
-                            color: Colors.indigo),
+                            color: const Color.fromARGB(255, 30, 60, 100)),
                         border: InputBorder.none,
                         hintText: "Votre Mot de passe",
                       ),
@@ -202,8 +202,8 @@ class LoginState extends State<Login> {
                           },
                           style: ButtonStyle(
                             elevation: WidgetStateProperty.all(10),
-                            backgroundColor:
-                                WidgetStateProperty.all(Colors.indigo),
+                            backgroundColor: WidgetStateProperty.all(
+                                const Color.fromARGB(255, 30, 60, 100)),
                             foregroundColor:
                                 WidgetStateProperty.all(Colors.white),
                             shape: WidgetStateProperty.all(
@@ -225,7 +225,7 @@ class LoginState extends State<Login> {
                 },
                 child: const Text(
                   'Récupérez Mot de passe',
-                  style: TextStyle(color: Colors.indigo),
+                  style: TextStyle(color: Color.fromARGB(255, 30, 60, 100)),
                 )),
             const SizedBox(height: 50),
           ],

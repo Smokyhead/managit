@@ -14,7 +14,7 @@ class NotificationsState extends State<Notifications> {
     Size size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.indigo,
+        backgroundColor: const Color.fromARGB(255, 30, 60, 100),
         foregroundColor: Colors.white,
         title: Text(
           'Notifications',

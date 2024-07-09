@@ -20,7 +20,7 @@ class _ResetPassword extends State<ResetPassword> {
               borderRadius: BorderRadius.vertical(
             bottom: Radius.circular(15),
           )),
-          backgroundColor: Colors.indigo,
+          backgroundColor: const Color.fromARGB(255, 30, 60, 100),
           foregroundColor: Colors.white,
           title: const Text("Mot de passe"),
         ),
@@ -37,15 +37,15 @@ class _ResetPassword extends State<ResetPassword> {
               child: Column(
                 children: <Widget>[
                   Container(
-                    margin: const EdgeInsets.only(
-                        right: 20, left: 20, bottom: 100),
+                    margin:
+                        const EdgeInsets.only(right: 20, left: 20, bottom: 100),
                     child: const Text(
                       "Récuperer votre mot de passe",
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 26,
-                          color: Colors.indigo),
+                          color: Color.fromARGB(255, 30, 60, 100)),
                     ),
                   ),
                   Container(
@@ -76,17 +76,16 @@ class _ResetPassword extends State<ResetPassword> {
                       onPressed: () {},
                       style: ButtonStyle(
                         elevation: WidgetStateProperty.all(5),
-                        backgroundColor:
-                            WidgetStateProperty.all(Colors.indigo),
-                        foregroundColor:
-                            WidgetStateProperty.all(Colors.white),
+                        backgroundColor: WidgetStateProperty.all(
+                            const Color.fromARGB(255, 30, 60, 100)),
+                        foregroundColor: WidgetStateProperty.all(Colors.white),
                         shape: WidgetStateProperty.all(
                           RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20)),
                         ),
                       ),
-                      child: const Text("Valider",
-                          style: TextStyle(fontSize: 19)),
+                      child:
+                          const Text("Valider", style: TextStyle(fontSize: 19)),
                     ),
                   ),
                   const SizedBox(

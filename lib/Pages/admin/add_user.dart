@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -53,7 +55,9 @@ class AddUserState extends State<AddUser> {
       if (_formKeyy.currentState!.validate()) {
         FirebaseFirestore.instance.collection("User").doc().set({});
       }
-    } catch (e) {}
+    } catch (e) {
+      print(e);
+    }
   }
 
   @override
@@ -61,7 +65,7 @@ class AddUserState extends State<AddUser> {
     Size size = MediaQuery.of(context).size;
     return Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.indigo,
+          backgroundColor: const Color.fromARGB(255, 30, 60, 100),
           foregroundColor: Colors.white,
           title: Text(
             'Nouveau utilisateur',
@@ -128,8 +132,8 @@ class AddUserState extends State<AddUser> {
                         onPressed: () {},
                         style: ButtonStyle(
                           elevation: WidgetStateProperty.all(10),
-                          backgroundColor:
-                              WidgetStateProperty.all(Colors.indigo),
+                          backgroundColor: WidgetStateProperty.all(
+                              const Color.fromARGB(255, 30, 60, 100)),
                           foregroundColor:
                               WidgetStateProperty.all(Colors.white),
                           shape: WidgetStateProperty.all(
