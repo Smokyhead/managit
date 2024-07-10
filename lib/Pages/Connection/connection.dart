@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
 import 'package:managit/pages/admin/admin_appbar.dart';
 import 'package:managit/pages/connection/password_recovery.dart';
+import 'package:managit/pages/employee/home.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Login extends StatefulWidget {
@@ -90,7 +91,7 @@ class LoginState extends State<Login> {
         } else {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const Scaffold()),
+            MaterialPageRoute(builder: (context) => const Home()),
           );
         }
       } else {
