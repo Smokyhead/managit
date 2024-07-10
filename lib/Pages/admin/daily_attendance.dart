@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -16,13 +15,6 @@ class _DailyAttendanceState extends State<DailyAttendance> {
   void initState() {
     _date.text = DateFormat('dd/MM/yyyy').format(DateTime.now());
     super.initState();
-  }
-
-  Future<void> _updateAttendance(
-      String userId, String key, String newValue) async {
-    final attendanceDocRef =
-        FirebaseFirestore.instance.collection('Attendance').doc(userId);
-    await attendanceDocRef.set({key: newValue}, SetOptions(merge: true));
   }
 
   @override
@@ -50,7 +42,6 @@ class _DailyAttendanceState extends State<DailyAttendance> {
                           context: context,
                           firstDate: DateTime(2024),
                           lastDate: DateTime(2100));
-
                       setState(() {
                         _date.text =
                             DateFormat('dd/MM/yyyy').format(pickedDate!);

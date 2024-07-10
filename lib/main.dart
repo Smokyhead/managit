@@ -1,7 +1,7 @@
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:flutter/material.dart';
-import 'package:managit/pages/connection/connection.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:managit/pages/employee/home.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +23,7 @@ class MyApp extends StatelessWidget {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Manag' 'IT',
-      home: Login(),
+      home: Home(),
     );
   }
 }
