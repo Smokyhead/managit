@@ -1,7 +1,10 @@
 // ignore_for_file: file_names, use_build_context_synchronously, avoid_print
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
 import 'package:managit/pages/admin/admin_appbar.dart';
@@ -50,10 +53,12 @@ class LoginState extends State<Login> {
     showDialog(
         context: (context),
         builder: (BuildContext context) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: Color.fromARGB(255, 30, 60, 100),
-            ),
+          return Center(
+            child: Platform.isAndroid
+                ? const CircularProgressIndicator(
+                    color: Color.fromARGB(255, 30, 60, 100),
+                  )
+                : const CupertinoActivityIndicator(),
           );
         });
     try {

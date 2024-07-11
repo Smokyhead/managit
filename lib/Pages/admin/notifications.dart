@@ -20,9 +20,6 @@ class NotificationsState extends State<Notifications> {
           'Notifications',
           style: TextStyle(fontSize: size.width * 0.0475),
         ),
-        actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.select_all))
-        ],
       ),
       body: const Center(
         child: Text('Notifications'),

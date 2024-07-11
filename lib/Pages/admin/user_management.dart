@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:managit/pages/admin/add_user.dart';
 
@@ -34,10 +37,12 @@ class _UserManagementState extends State<UserManagement> {
                   .snapshots(),
               builder: (context, snapshots) {
                 if (snapshots.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: Color.fromARGB(255, 30, 60, 100),
-                    ),
+                  return Center(
+                    child: Platform.isAndroid
+                        ? const CircularProgressIndicator(
+                            color: Color.fromARGB(255, 30, 60, 100),
+                          )
+                        : const CupertinoActivityIndicator(),
                   );
                 }
                 final docs = snapshots.data?.docs;

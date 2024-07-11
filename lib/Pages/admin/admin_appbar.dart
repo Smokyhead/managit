@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:managit/pages/admin/absence_management.dart';
 import 'package:managit/pages/admin/daily_attendance.dart';
@@ -28,10 +31,12 @@ class AdminAppBarState extends State<AdminAppBar> {
     showDialog(
         context: (context),
         builder: (BuildContext context) {
-          return const Center(
-            child: CircularProgressIndicator(
-              color: Color.fromARGB(255, 30, 60, 100),
-            ),
+          return Center(
+            child: Platform.isAndroid
+                ? const CircularProgressIndicator(
+                    color: Color.fromARGB(255, 30, 60, 100),
+                  )
+                : const CupertinoActivityIndicator(),
           );
         });
     try {

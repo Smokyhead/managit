@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:managit/pages/connection/connection.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -16,6 +19,7 @@ class _LeaveHomeState extends State<Home> {
   final User? _user = FirebaseAuth.instance.currentUser;
   final String today = DateFormat('dd/MM/yyyy').format(DateTime.now());
   final String time = DateFormat('HH:mm').format(DateTime.now());
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   String generateId() {
     final random = Random();
@@ -25,6 +29,30 @@ class _LeaveHomeState extends State<Home> {
 
     return String.fromCharCodes(Iterable.generate(
         length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
+  }
+
+  Future<void> signOut() async {
+    showDialog(
+        context: (context),
+        builder: (BuildContext context) {
+          return Center(
+            child: Platform.isAndroid
+                ? const CircularProgressIndicator(
+                    color: Color.fromARGB(255, 30, 60, 100),
+                  )
+                : const CupertinoActivityIndicator(),
+          );
+        });
+    try {
+      await _auth.signOut();
+      // ignore: use_build_context_synchronously
+      Navigator.push(context, MaterialPageRoute(builder: (context) {
+        return const Login();
+      }));
+    } catch (e) {
+      // ignore: avoid_print
+      print(e.toString());
+    }
   }
 
   @override
@@ -37,7 +65,7 @@ class _LeaveHomeState extends State<Home> {
         leading: IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              Navigator.of(context).pop();
+              signOut();
             }),
         backgroundColor: const Color.fromARGB(255, 30, 60, 100),
         foregroundColor: Colors.white,
@@ -57,44 +85,56 @@ class _LeaveHomeState extends State<Home> {
                     .snapshots(),
                 builder: (context, snapshots) {
                   if (snapshots.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        color: Color.fromARGB(255, 30, 60, 100),
-                      ),
+                    return Center(
+                      child: Platform.isAndroid
+                          ? const CircularProgressIndicator(
+                              color: Color.fromARGB(255, 30, 60, 100),
+                            )
+                          : const CupertinoActivityIndicator(),
                     );
                   }
                   final docs = snapshots.data?.docs;
                   if (docs == null || docs.isEmpty) {
                     return Center(
-                        child: ElevatedButton(
-                            style: const ButtonStyle(
-                                foregroundColor:
-                                    WidgetStatePropertyAll(Colors.white),
-                                backgroundColor: WidgetStatePropertyAll(
-                                    Color.fromARGB(255, 30, 60, 100))),
-                            onPressed: () {
-                              final String id = generateId();
-                              FirebaseFirestore.instance
-                                  .collection('Notification')
-                                  .doc(id)
-                                  .set({
-                                'id': id,
-                                'userID': _user.uid,
-                                'date': today,
-                                'time': time,
-                                'type': 'entré',
-                                'shift': 'Matin',
-                              });
-                            },
-                            child: const Text('Arrivée')));
+                        child: SizedBox(
+                      height: size.height * 0.075,
+                      width: size.width * 0.35,
+                      child: ElevatedButton(
+                          style: ButtonStyle(
+                              fixedSize: WidgetStatePropertyAll(size * 0.1),
+                              foregroundColor:
+                                  const WidgetStatePropertyAll(Colors.white),
+                              backgroundColor: const WidgetStatePropertyAll(
+                                  Color.fromARGB(255, 30, 60, 100))),
+                          onPressed: () {
+                            final String id = generateId();
+                            FirebaseFirestore.instance
+                                .collection('Notification')
+                                .doc(id)
+                                .set({
+                              'id': id,
+                              'userID': _user.uid,
+                              'date': today,
+                              'time': time,
+                              'type': 'entré',
+                              'shift': 'Matin',
+                              'isRead': false
+                            });
+                          },
+                          child: Text(
+                            'Arrivée',
+                            style: TextStyle(fontSize: size.width * 0.05),
+                          )),
+                    ));
                   } else {
                     var data = snapshots.data?.docs.first;
                     if (data!['sortieMatin'] == '') {
                       return ElevatedButton(
-                          style: const ButtonStyle(
+                          style: ButtonStyle(
+                              fixedSize: WidgetStatePropertyAll(size * 0.1),
                               foregroundColor:
-                                  WidgetStatePropertyAll(Colors.white),
-                              backgroundColor: WidgetStatePropertyAll(
+                                  const WidgetStatePropertyAll(Colors.white),
+                              backgroundColor: const WidgetStatePropertyAll(
                                   Color.fromARGB(255, 30, 60, 100))),
                           onPressed: () {
                             final String id = generateId();
@@ -108,15 +148,18 @@ class _LeaveHomeState extends State<Home> {
                               'time': time,
                               'type': 'sortie',
                               'shift': 'Matin',
+                              'isRead': false
                             });
                           },
-                          child: const Text('Sortie Pause'));
+                          child: Text('Sortie Pause',
+                              style: TextStyle(fontSize: size.width * 0.05)));
                     } else if (data['entréAM'] == '') {
                       return ElevatedButton(
-                          style: const ButtonStyle(
+                          style: ButtonStyle(
+                              fixedSize: WidgetStatePropertyAll(size * 0.1),
                               foregroundColor:
-                                  WidgetStatePropertyAll(Colors.white),
-                              backgroundColor: WidgetStatePropertyAll(
+                                  const WidgetStatePropertyAll(Colors.white),
+                              backgroundColor: const WidgetStatePropertyAll(
                                   Color.fromARGB(255, 30, 60, 100))),
                           onPressed: () {
                             final String id = generateId();
@@ -130,15 +173,18 @@ class _LeaveHomeState extends State<Home> {
                               'time': time,
                               'type': 'entré',
                               'shift': 'AM',
+                              'isRead': false
                             });
                           },
-                          child: const Text('Entré'));
+                          child: Text('Entré',
+                              style: TextStyle(fontSize: size.width * 0.05)));
                     } else if (data['sortieAM'] == '') {
                       return ElevatedButton(
-                          style: const ButtonStyle(
+                          style: ButtonStyle(
+                              fixedSize: WidgetStatePropertyAll(size * 0.1),
                               foregroundColor:
-                                  WidgetStatePropertyAll(Colors.white),
-                              backgroundColor: WidgetStatePropertyAll(
+                                  const WidgetStatePropertyAll(Colors.white),
+                              backgroundColor: const WidgetStatePropertyAll(
                                   Color.fromARGB(255, 30, 60, 100))),
                           onPressed: () {
                             final String id = generateId();
@@ -152,9 +198,11 @@ class _LeaveHomeState extends State<Home> {
                               'time': time,
                               'type': 'sortie',
                               'shift': 'AM',
+                              'isRead': false
                             });
                           },
-                          child: const Text('Sortie'));
+                          child: Text('Sortie',
+                              style: TextStyle(fontSize: size.width * 0.05)));
                     }
                   }
                   throw Exception();

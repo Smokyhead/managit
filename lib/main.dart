@@ -1,8 +1,11 @@
 // ignore_for_file: avoid_print, use_build_context_synchronously
 
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:managit/pages/admin/admin_appbar.dart';
@@ -25,7 +28,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(
-      color: Color.fromARGB(255, 30, 60, 100),
       debugShowCheckedModeBanner: false,
       title: 'Manag' 'IT',
       home: SplashScreen(),
@@ -93,11 +95,13 @@ class SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
-        child: CircularProgressIndicator(
-          color: Color.fromARGB(255, 30, 60, 100),
-        ),
+        child: Platform.isAndroid
+            ? const CircularProgressIndicator(
+                color: Color.fromARGB(255, 30, 60, 100),
+              )
+            : const CupertinoActivityIndicator(),
       ),
     );
   }
