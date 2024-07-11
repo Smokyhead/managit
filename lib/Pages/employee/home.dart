@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:managit/models/user_model.dart';
 import 'package:managit/pages/connection/connection.dart';
 
 class Home extends StatefulWidget {
@@ -20,6 +21,13 @@ class _LeaveHomeState extends State<Home> {
   final String today = DateFormat('dd/MM/yyyy').format(DateTime.now());
   final String time = DateFormat('HH:mm').format(DateTime.now());
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  late UserData userData;
+
+  @override
+  void initState() async {
+    userData = await getCurrentUserData();
+    super.initState();
+  }
 
   String generateId() {
     final random = Random();
@@ -29,6 +37,26 @@ class _LeaveHomeState extends State<Home> {
 
     return String.fromCharCodes(Iterable.generate(
         length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
+  }
+
+  Future<UserData> getCurrentUserData() async {
+    if (_user == null) {
+      throw Exception('No user is currently logged in.');
+    }
+
+    final DocumentSnapshot<Map<String, dynamic>> snapshot =
+        await FirebaseFirestore.instance
+            .collection('User')
+            .doc(_user.uid)
+            .get();
+
+    if (!snapshot.exists) {
+      throw Exception('User data not found in Firestore.');
+    }
+
+    final UserData userData = UserData();
+    userData.fromMap(snapshot.data() as Map<String, dynamic>);
+    return userData;
   }
 
   Future<void> signOut() async {
@@ -107,17 +135,23 @@ class _LeaveHomeState extends State<Home> {
                               backgroundColor: const WidgetStatePropertyAll(
                                   Color.fromARGB(255, 30, 60, 100))),
                           onPressed: () {
-                            final String id = generateId();
+                            final String notificationId = generateId();
+                            final String attendanceId = generateId();
+                            FirebaseFirestore.instance
+                                .collection('Attendance')
+                                .doc(attendanceId)
+                                .set({});
                             FirebaseFirestore.instance
                                 .collection('Notification')
-                                .doc(id)
+                                .doc(notificationId)
                                 .set({
-                              'id': id,
+                              'id': notificationId,
                               'userID': _user.uid,
                               'date': today,
                               'time': time,
                               'type': 'entré',
                               'shift': 'Matin',
+                              'content': '',
                               'isRead': false
                             });
                           },
