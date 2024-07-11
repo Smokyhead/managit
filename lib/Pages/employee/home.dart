@@ -140,18 +140,25 @@ class _LeaveHomeState extends State<Home> {
                             FirebaseFirestore.instance
                                 .collection('Attendance')
                                 .doc(attendanceId)
-                                .set({});
+                                .set({
+                              'id': attendanceId,
+                              'userID': _user,
+                              'date': today,
+                              'entréMatin': time
+                            });
                             FirebaseFirestore.instance
                                 .collection('Notification')
                                 .doc(notificationId)
                                 .set({
                               'id': notificationId,
+                              'attendanceId': attendanceId,
                               'userID': _user.uid,
                               'date': today,
                               'time': time,
                               'type': 'entré',
                               'shift': 'Matin',
-                              'content': '',
+                              'content':
+                                  '${userData.nom} ${userData.prenom} à pointé son entrée à $time',
                               'isRead': false
                             });
                           },
@@ -182,6 +189,8 @@ class _LeaveHomeState extends State<Home> {
                               'time': time,
                               'type': 'sortie',
                               'shift': 'Matin',
+                              'content':
+                                  '${userData.nom} ${userData.prenom} à pointé son sortie à $time',
                               'isRead': false
                             });
                           },
@@ -207,6 +216,8 @@ class _LeaveHomeState extends State<Home> {
                               'time': time,
                               'type': 'entré',
                               'shift': 'AM',
+                              'content':
+                                  '${userData.nom} ${userData.prenom} à pointé son entrée à $time',
                               'isRead': false
                             });
                           },
@@ -232,6 +243,8 @@ class _LeaveHomeState extends State<Home> {
                               'time': time,
                               'type': 'sortie',
                               'shift': 'AM',
+                              'content':
+                                  '${userData.nom} ${userData.prenom} à pointé son sortie à $time',
                               'isRead': false
                             });
                           },
