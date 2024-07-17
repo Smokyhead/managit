@@ -4,6 +4,8 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:mailer/mailer.dart';
+import 'package:mailer/smtp_server/gmail.dart';
 
 class AddUser extends StatefulWidget {
   const AddUser({super.key});
@@ -17,6 +19,25 @@ class AddUserState extends State<AddUser> {
   final TextEditingController _nom = TextEditingController();
   final TextEditingController _prenom = TextEditingController();
   final TextEditingController _email = TextEditingController();
+
+  final smtpServer = gmail("saidane.sirine2001@gmail.com", "itsnotsafe");
+  // final smtpServer = gmail(dotenv.env['EMAIL']!, dotenv.env['PASSWORD']!);
+
+  sendMail() async {
+    final message = Message()
+      ..from = const Address("saidane.sirine2001@gmail.com", 'Confirmation bot')
+      ..recipients.add('mopigo7718@stikezz.com')
+      ..subject = 'Test Dart Mailer library'
+      ..text = 'This is the plain text.\nThis is line 2 of the text part.';
+
+    try {
+      final sendReport = await send(message, smtpServer);
+      print('Message sent: $sendReport');
+    } on MailerException catch (e) {
+      print('Message not sent.');
+      print(e);
+    }
+  }
 
   String generateDefaultPassword({int length = 12}) {
     const String upperCaseLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -129,7 +150,9 @@ class AddUserState extends State<AddUser> {
                     width: size.width * 0.4,
                     height: 60,
                     child: TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          sendMail();
+                        },
                         style: ButtonStyle(
                           elevation: WidgetStateProperty.all(10),
                           backgroundColor: WidgetStateProperty.all(
