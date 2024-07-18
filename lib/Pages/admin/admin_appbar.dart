@@ -25,7 +25,7 @@ class AdminAppBar extends StatefulWidget {
 
 class AdminAppBarState extends State<AdminAppBar> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  int _selectedPageIndex = 0;
+  int _selectedPageIndex = 1;
 
   Future<void> signOut() async {
     showDialog(

@@ -1,3 +1,6 @@
+// ignore_for_file: use_build_context_synchronously
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class ResetPassword extends StatefulWidget {
@@ -73,7 +76,25 @@ class _ResetPassword extends State<ResetPassword> {
                     width: 150,
                     height: 50,
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: () async {
+                        final email = emailController.text;
+
+                        try {
+                          await FirebaseAuth.instance
+                              .sendPasswordResetEmail(email: email);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Email sent for password reset!'),
+                            ),
+                          );
+                        } on FirebaseAuthException catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(e.message!),
+                            ),
+                          );
+                        }
+                      },
                       style: ButtonStyle(
                         elevation: WidgetStateProperty.all(5),
                         backgroundColor: WidgetStateProperty.all(

@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:managit/models/user_model.dart';
 import 'package:managit/pages/connection/connection.dart';
+import 'package:managit/pages/employee/leave_request.dart';
+import 'package:managit/pages/employee/permission_request.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -353,10 +355,20 @@ class _HomeState extends State<Home> {
               child: Divider(),
             ),
             ElevatedButton(
-                onPressed: () {}, child: const Text('Demander congé')),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return const LeaveRequest();
+                  }));
+                },
+                child: const Text('Demander congé')),
             SizedBox(height: size.height * 0.025),
             ElevatedButton(
-                onPressed: () {}, child: const Text('Demander autorisation')),
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) {
+                    return const PermissionRequest();
+                  }));
+                },
+                child: const Text('Demander autorisation')),
             SizedBox(height: size.height * 0.025),
             ElevatedButton(onPressed: () {}, child: const Text('Retards')),
             SizedBox(height: size.height * 0.025),
