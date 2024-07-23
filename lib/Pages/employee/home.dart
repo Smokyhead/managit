@@ -139,106 +139,120 @@ class _HomeState extends State<Home> {
                   }
                   final docs = snapshots.data?.docs;
                   if (docs == null || docs.isEmpty) {
-                    return Center(
-                        child: SizedBox(
-                      height: size.height * 0.075,
-                      width: size.width * 0.35,
-                      child: ElevatedButton(
-                          style: ButtonStyle(
-                              fixedSize: WidgetStatePropertyAll(size * 0.1),
-                              foregroundColor:
-                                  const WidgetStatePropertyAll(Colors.white),
-                              backgroundColor: const WidgetStatePropertyAll(
-                                  Color.fromARGB(255, 30, 60, 100))),
-                          onPressed: () {
-                            final String notificationId = generateId();
-                            final String attendanceId = generateId();
-                            FirebaseFirestore.instance
-                                .collection('Attendance')
-                                .doc(attendanceId)
-                                .set({
-                              'id': attendanceId,
-                              'userID': _user.uid,
-                              'date': today,
-                              'entréMatin': time,
-                              'entréAM': '',
-                              'sortieMatin': '',
-                              'sortieAM': '',
-                              'sent': true
-                            });
-                            FirebaseFirestore.instance
-                                .collection('Notification')
-                                .doc(notificationId)
-                                .set({
-                              'id': notificationId,
-                              'attendanceId': attendanceId,
-                              'userID': _user.uid,
-                              'timestamp': DateTime.now(),
-                              'date': today,
-                              'time': time,
-                              'type': 'entréMatin',
-                              'content':
-                                  '${_userData.nom} ${_userData.prenom} à pointé son entrée matin à $time',
-                              'isRead': false,
-                              'validé': false,
-                              'typeNot': 'pointage'
-                            });
-                          },
-                          child: Text(
-                            'Arrivée',
-                            style: TextStyle(fontSize: size.width * 0.05),
-                          )),
-                    ));
+                    return Column(
+                      children: [
+                        Text('Arrivé Matin',
+                            style: TextStyle(
+                                fontSize: size.width * 0.05,
+                                fontWeight: FontWeight.bold)),
+                        SizedBox(
+                          height: size.height * 0.02,
+                        ),
+                        Center(
+                            child: SizedBox(
+                          width: size.width * 0.25,
+                          height: size.width * 0.3,
+                          child: IconButton(
+                              style: ButtonStyle(
+                                  fixedSize: WidgetStatePropertyAll(size * 0.1),
+                                  foregroundColor: const WidgetStatePropertyAll(
+                                      Colors.white),
+                                  backgroundColor: const WidgetStatePropertyAll(
+                                      Color.fromARGB(255, 30, 60, 100))),
+                              onPressed: () {
+                                final String notificationId = generateId();
+                                final String attendanceId = generateId();
+                                FirebaseFirestore.instance
+                                    .collection('Attendance')
+                                    .doc(attendanceId)
+                                    .set({
+                                  'id': attendanceId,
+                                  'userID': _user.uid,
+                                  'date': today,
+                                  'entréMatin': time,
+                                  'entréAM': '',
+                                  'sortieMatin': '',
+                                  'sortieAM': '',
+                                  'sent': true
+                                });
+                                FirebaseFirestore.instance
+                                    .collection('Notification')
+                                    .doc(notificationId)
+                                    .set({
+                                  'id': notificationId,
+                                  'attendanceId': attendanceId,
+                                  'userID': _user.uid,
+                                  'timestamp': DateTime.now(),
+                                  'date': today,
+                                  'time': time,
+                                  'type': 'entréMatin',
+                                  'content':
+                                      '${_userData.nom} ${_userData.prenom} à pointé son entrée matin à $time',
+                                  'isRead': false,
+                                  'validé': false,
+                                  'typeNot': 'pointage'
+                                });
+                              },
+                              icon: Image.asset('assets/fingerprint.png')),
+                        )),
+                      ],
+                    );
                   } else {
                     var data = snapshots.data?.docs.first;
                     if (data!['sortieMatin'] == '') {
                       return data['sent'] == false
-                          ? SizedBox(
-                              height: size.height * 0.075,
-                              width: size.width * 0.35,
-                              child: ElevatedButton(
-                                  style: ButtonStyle(
-                                      fixedSize:
-                                          WidgetStatePropertyAll(size * 0.1),
-                                      foregroundColor:
-                                          const WidgetStatePropertyAll(
-                                              Colors.white),
-                                      backgroundColor:
-                                          const WidgetStatePropertyAll(
-                                              Color.fromARGB(
-                                                  255, 30, 60, 100))),
-                                  onPressed: () {
-                                    final String id = generateId();
-                                    FirebaseFirestore.instance
-                                        .collection('Attendance')
-                                        .doc(data['id'])
-                                        .update({
-                                      'sortieMatin': time,
-                                      'sent': true,
-                                      'tardinessMatin': _calculateTardiness(
-                                          data['entréMatin'], time, 'Matin')
-                                    });
-                                    FirebaseFirestore.instance
-                                        .collection('Notification')
-                                        .doc(id)
-                                        .set({
-                                      'id': id,
-                                      'userID': _user.uid,
-                                      'attendanceId': data['id'],
-                                      'timestamp': DateTime.now(),
-                                      'date': today,
-                                      'time': time,
-                                      'type': 'sortieMatin',
-                                      'content':
-                                          '${_userData.nom} ${_userData.prenom} à pointé son sortie de pause à $time',
-                                      'isRead': false,
-                                      'validé': false,
-                                      'typeNot': 'pointage'
-                                    });
-                                  },
-                                  child: Text('Pause',
-                                      style: TextStyle(
-                                          fontSize: size.width * 0.05))),
+                          ? Column(
+                              children: [
+                                Text('Sortie de pause',
+                                    style: TextStyle(
+                                        fontSize: size.width * 0.05,
+                                        fontWeight: FontWeight.bold)),
+                                SizedBox(
+                                  height: size.height * 0.02,
+                                ),
+                                IconButton(
+                                    style: ButtonStyle(
+                                        fixedSize:
+                                            WidgetStatePropertyAll(size * 0.1),
+                                        foregroundColor:
+                                            const WidgetStatePropertyAll(
+                                                Colors.white),
+                                        backgroundColor:
+                                            const WidgetStatePropertyAll(
+                                                Color.fromARGB(
+                                                    255, 30, 60, 100))),
+                                    onPressed: () {
+                                      final String id = generateId();
+                                      FirebaseFirestore.instance
+                                          .collection('Attendance')
+                                          .doc(data['id'])
+                                          .update({
+                                        'sortieMatin': time,
+                                        'sent': true,
+                                        'tardinessMatin': _calculateTardiness(
+                                            data['entréMatin'], time, 'Matin')
+                                      });
+                                      FirebaseFirestore.instance
+                                          .collection('Notification')
+                                          .doc(id)
+                                          .set({
+                                        'id': id,
+                                        'userID': _user.uid,
+                                        'attendanceId': data['id'],
+                                        'timestamp': DateTime.now(),
+                                        'date': today,
+                                        'time': time,
+                                        'type': 'sortieMatin',
+                                        'content':
+                                            '${_userData.nom} ${_userData.prenom} à pointé son sortie de pause à $time',
+                                        'isRead': false,
+                                        'validé': false,
+                                        'typeNot': 'pointage'
+                                      });
+                                    },
+                                    icon:
+                                        Image.asset('assets/fingerprint.png')),
+                              ],
                             )
                           : Text(
                               'Validation...',

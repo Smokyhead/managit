@@ -24,6 +24,7 @@ class _PermissionRequestState extends State<PermissionRequest> {
   String formattedStartTime = "";
   String formattedEndTime = "";
   final User? _user = FirebaseAuth.instance.currentUser;
+  // ignore: unused_field
   late UserData _userData;
 
   @override

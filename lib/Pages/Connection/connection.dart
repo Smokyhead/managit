@@ -10,7 +10,6 @@ import 'package:iconly/iconly.dart';
 import 'package:managit/pages/admin/admin_appbar.dart';
 import 'package:managit/pages/connection/password_recovery.dart';
 import 'package:managit/pages/employee/home.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -28,7 +27,6 @@ class LoginState extends State<Login> {
   String _errorMessage = '';
   bool hidePassword = true;
   late User appUser;
-  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
 
   Future<String> getRole(String id) async {
     late Map<String, dynamic> data;
@@ -83,9 +81,6 @@ class LoginState extends State<Login> {
         _passwordController.text,
       );
       if (user != null) {
-        final SharedPreferences prefs = await _prefs;
-        prefs.setString('uid', user.uid);
-        print(prefs.getString('uid'));
         print(await getRole(user.uid));
         appUser = user;
         if (await getRole(user.uid) == 'admin') {
