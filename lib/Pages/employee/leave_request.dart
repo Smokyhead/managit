@@ -541,7 +541,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                 ),
                 SizedBox(height: size.height * 0.05),
                 const Text(
-                  "Type de congé",
+                  "Nature de congé",
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: size.height * 0.01),
