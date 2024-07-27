@@ -107,229 +107,42 @@ class _HomeState extends State<Home> {
           IconButton(onPressed: () {}, icon: const Icon(Icons.notifications))
         ],
       ),
-      body: Padding(
-        padding: EdgeInsets.all(size.width * 0.05),
-        child: Column(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
-              child: Center(
-                child: Text(
-                  DateFormat('dd - MM - yyyy').format(DateTime.now()),
-                  style: TextStyle(
-                      fontWeight: FontWeight.w400, fontSize: size.width * 0.05),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(size.width * 0.05),
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: size.height * 0.015),
+                child: Center(
+                  child: Text(
+                    DateFormat('dd - MM - yyyy').format(DateTime.now()),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w400, fontSize: size.width * 0.05),
+                  ),
                 ),
               ),
-            ),
-            StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('Attendance')
-                    .where('userID', isEqualTo: _user!.uid)
-                    .where('date', isEqualTo: today)
-                    .snapshots(),
-                builder: (context, snapshots) {
-                  if (snapshots.connectionState == ConnectionState.waiting) {
-                    return Center(
-                      child: Platform.isAndroid
-                          ? const CircularProgressIndicator(
-                              color: Color.fromARGB(255, 30, 60, 100),
-                            )
-                          : const CupertinoActivityIndicator(),
-                    );
-                  }
-                  final docs = snapshots.data?.docs;
-                  if (docs == null || docs.isEmpty) {
-                    return Column(
-                      children: [
-                        Text('Arrivé Matin',
-                            style: TextStyle(
-                                fontSize: size.width * 0.05,
-                                fontWeight: FontWeight.bold)),
-                        SizedBox(
-                          height: size.height * 0.02,
-                        ),
-                        Center(
-                            child: SizedBox(
-                          width: size.width * 0.25,
-                          height: size.width * 0.3,
-                          child: IconButton(
-                              style: ButtonStyle(
-                                  fixedSize: WidgetStatePropertyAll(size * 0.1),
-                                  foregroundColor: const WidgetStatePropertyAll(
-                                      Colors.white),
-                                  backgroundColor: const WidgetStatePropertyAll(
-                                      Color.fromARGB(255, 30, 60, 100))),
-                              onPressed: () {
-                                final String notificationId = generateId();
-                                final String attendanceId = generateId();
-                                FirebaseFirestore.instance
-                                    .collection('Attendance')
-                                    .doc(attendanceId)
-                                    .set({
-                                  'id': attendanceId,
-                                  'userID': _user.uid,
-                                  'date': today,
-                                  'entréMatin': time,
-                                  'entréAM': '',
-                                  'sortieMatin': '',
-                                  'sortieAM': '',
-                                  'sent': true
-                                });
-                                FirebaseFirestore.instance
-                                    .collection('Notification')
-                                    .doc(notificationId)
-                                    .set({
-                                  'id': notificationId,
-                                  'attendanceId': attendanceId,
-                                  'userID': _user.uid,
-                                  'timestamp': DateTime.now(),
-                                  'date': today,
-                                  'time': time,
-                                  'type': 'entréMatin',
-                                  'content':
-                                      '${_userData.nom} ${_userData.prenom} à pointé son entrée matin à $time',
-                                  'isRead': false,
-                                  'validé': false,
-                                  'typeNot': 'pointage'
-                                });
-                              },
-                              icon: Image.asset('assets/fingerprint.png')),
-                        )),
-                      ],
-                    );
-                  } else {
-                    var data = snapshots.data?.docs.first;
-                    if (data!['sortieMatin'] == '') {
-                      return data['sent'] == false
-                          ? Column(
-                              children: [
-                                Text('Sortie de pause',
-                                    style: TextStyle(
-                                        fontSize: size.width * 0.05,
-                                        fontWeight: FontWeight.bold)),
-                                SizedBox(
-                                  height: size.height * 0.02,
-                                ),
-                                Center(
-                                  child: SizedBox(
-                                    width: size.width * 0.25,
-                                    height: size.width * 0.3,
-                                    child: IconButton(
-                                        style: const ButtonStyle(
-                                            foregroundColor:
-                                                WidgetStatePropertyAll(
-                                                    Colors.white),
-                                            backgroundColor:
-                                                WidgetStatePropertyAll(
-                                                    Color.fromARGB(
-                                                        255, 30, 60, 100))),
-                                        onPressed: () {
-                                          final String id = generateId();
-                                          FirebaseFirestore.instance
-                                              .collection('Attendance')
-                                              .doc(data['id'])
-                                              .update({
-                                            'sortieMatin': time,
-                                            'sent': true,
-                                            'tardinessMatin':
-                                                _calculateTardiness(
-                                                    data['entréMatin'],
-                                                    time,
-                                                    'Matin')
-                                          });
-                                          FirebaseFirestore.instance
-                                              .collection('Notification')
-                                              .doc(id)
-                                              .set({
-                                            'id': id,
-                                            'userID': _user.uid,
-                                            'attendanceId': data['id'],
-                                            'timestamp': DateTime.now(),
-                                            'date': today,
-                                            'time': time,
-                                            'type': 'sortieMatin',
-                                            'content':
-                                                '${_userData.nom} ${_userData.prenom} à pointé son sortie de pause à $time',
-                                            'isRead': false,
-                                            'validé': false,
-                                            'typeNot': 'pointage'
-                                          });
-                                        },
-                                        icon: Image.asset(
-                                            'assets/fingerprint.png')),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Text(
-                              'Validation...',
-                              style: TextStyle(fontSize: size.width * 0.05),
-                            );
-                    } else if (data['entréAM'] == '') {
-                      return data['sent'] == false
-                          ? Column(
-                              children: [
-                                Text('Retour',
-                                    style: TextStyle(
-                                        fontSize: size.width * 0.05,
-                                        fontWeight: FontWeight.bold)),
-                                SizedBox(
-                                  height: size.height * 0.02,
-                                ),
-                                Center(
-                                  child: SizedBox(
-                                    width: size.width * 0.25,
-                                    height: size.width * 0.3,
-                                    child: IconButton(
-                                        style: const ButtonStyle(
-                                            foregroundColor:
-                                                WidgetStatePropertyAll(
-                                                    Colors.white),
-                                            backgroundColor:
-                                                WidgetStatePropertyAll(
-                                                    Color.fromARGB(
-                                                        255, 30, 60, 100))),
-                                        onPressed: () {
-                                          final String id = generateId();
-                                          FirebaseFirestore.instance
-                                              .collection('Attendance')
-                                              .doc(data['id'])
-                                              .update({
-                                            'entréAM': time,
-                                            'sent': true
-                                          });
-                                          FirebaseFirestore.instance
-                                              .collection('Notification')
-                                              .doc(id)
-                                              .set({
-                                            'id': id,
-                                            'userID': _user.uid,
-                                            'attendanceId': data['id'],
-                                            'timestamp': DateTime.now(),
-                                            'date': today,
-                                            'time': time,
-                                            'type': 'entréAM',
-                                            'content':
-                                                '${_userData.nom} ${_userData.prenom} à pointé son entrée après la pause à $time',
-                                            'isRead': false,
-                                            'validé': false,
-                                            'typeNot': 'pointage'
-                                          });
-                                        },
-                                        icon: Image.asset(
-                                            'assets/fingerprint.png')),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Text(
-                              'Validation...',
-                              style: TextStyle(fontSize: size.width * 0.05),
-                            );
-                    } else if (data['sortieAM'] == '') {
+              StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('Attendance')
+                      .where('userID', isEqualTo: _user!.uid)
+                      .where('date', isEqualTo: today)
+                      .snapshots(),
+                  builder: (context, snapshots) {
+                    if (snapshots.connectionState == ConnectionState.waiting) {
+                      return Center(
+                        child: Platform.isAndroid
+                            ? const CircularProgressIndicator(
+                                color: Color.fromARGB(255, 30, 60, 100),
+                              )
+                            : const CupertinoActivityIndicator(),
+                      );
+                    }
+                    final docs = snapshots.data?.docs;
+                    if (docs == null || docs.isEmpty) {
                       return Column(
                         children: [
-                          Text('Retour',
+                          Text('Arrivé Matin',
                               style: TextStyle(
                                   fontSize: size.width * 0.05,
                                   fontWeight: FontWeight.bold)),
@@ -337,126 +150,315 @@ class _HomeState extends State<Home> {
                             height: size.height * 0.02,
                           ),
                           Center(
-                            child: SizedBox(
-                              width: size.width * 0.25,
-                              height: size.width * 0.3,
-                              child: IconButton(
-                                  style: const ButtonStyle(
-                                      foregroundColor:
-                                          WidgetStatePropertyAll(Colors.white),
-                                      backgroundColor: WidgetStatePropertyAll(
-                                          Color.fromARGB(255, 30, 60, 100))),
-                                  onPressed: () {
-                                    final String id = generateId();
-                                    FirebaseFirestore.instance
-                                        .collection('Attendance')
-                                        .doc(data['id'])
-                                        .update({
-                                      'sortieAM': time,
-                                      'sent': true,
-                                      'tardinessAM': _calculateTardiness(
-                                          data['entréAM'], time, 'AM')
-                                    });
-                                    FirebaseFirestore.instance
-                                        .collection('Notification')
-                                        .doc(id)
-                                        .set({
-                                      'id': id,
-                                      'userID': _user.uid,
-                                      'attendanceId': data['id'],
-                                      'timestamp': DateTime.now(),
-                                      'date': today,
-                                      'time': time,
-                                      'type': 'sortieAM',
-                                      'content':
-                                          '${_userData.nom} ${_userData.prenom} à pointé son sortie à $time',
-                                      'isRead': false,
-                                      'validé': false,
-                                      'typeNot': 'pointage'
-                                    });
-                                  },
-                                  icon: Image.asset('assets/fingerprint.png')),
-                            ),
-                          ),
+                              child: SizedBox(
+                            width: size.width * 0.25,
+                            height: size.width * 0.3,
+                            child: IconButton(
+                                style: ButtonStyle(
+                                    fixedSize: WidgetStatePropertyAll(size * 0.1),
+                                    foregroundColor: const WidgetStatePropertyAll(
+                                        Colors.white),
+                                    backgroundColor: const WidgetStatePropertyAll(
+                                        Color.fromARGB(255, 30, 60, 100))),
+                                onPressed: () {
+                                  final String notificationId = generateId();
+                                  final String attendanceId = generateId();
+                                  FirebaseFirestore.instance
+                                      .collection('Attendance')
+                                      .doc(attendanceId)
+                                      .set({
+                                    'id': attendanceId,
+                                    'userID': _user.uid,
+                                    'date': today,
+                                    'entréMatin': time,
+                                    'entréAM': '',
+                                    'sortieMatin': '',
+                                    'sortieAM': '',
+                                    'sent': true
+                                  });
+                                  FirebaseFirestore.instance
+                                      .collection('Notification')
+                                      .doc(notificationId)
+                                      .set({
+                                    'id': notificationId,
+                                    'attendanceId': attendanceId,
+                                    'userID': _user.uid,
+                                    'timestamp': DateTime.now(),
+                                    'date': today,
+                                    'time': time,
+                                    'type': 'entréMatin',
+                                    'content':
+                                        '${_userData.nom} ${_userData.prenom} à pointé son entrée matin à $time',
+                                    'isRead': false,
+                                    'validé': false,
+                                    'typeNot': 'pointage'
+                                  });
+                                },
+                                icon: Image.asset('assets/fingerprint.png')),
+                          )),
                         ],
                       );
+                    } else {
+                      var data = snapshots.data?.docs.first;
+                      if (data!['sortieMatin'] == '') {
+                        return data['sent'] == false
+                            ? Column(
+                                children: [
+                                  Text('Sortie de pause',
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.05,
+                                          fontWeight: FontWeight.bold)),
+                                  SizedBox(
+                                    height: size.height * 0.02,
+                                  ),
+                                  Center(
+                                    child: SizedBox(
+                                      width: size.width * 0.25,
+                                      height: size.width * 0.3,
+                                      child: IconButton(
+                                          style: const ButtonStyle(
+                                              foregroundColor:
+                                                  WidgetStatePropertyAll(
+                                                      Colors.white),
+                                              backgroundColor:
+                                                  WidgetStatePropertyAll(
+                                                      Color.fromARGB(
+                                                          255, 30, 60, 100))),
+                                          onPressed: () {
+                                            final String id = generateId();
+                                            FirebaseFirestore.instance
+                                                .collection('Attendance')
+                                                .doc(data['id'])
+                                                .update({
+                                              'sortieMatin': time,
+                                              'sent': true,
+                                              'tardinessMatin':
+                                                  _calculateTardiness(
+                                                      data['entréMatin'],
+                                                      time,
+                                                      'Matin')
+                                            });
+                                            FirebaseFirestore.instance
+                                                .collection('Notification')
+                                                .doc(id)
+                                                .set({
+                                              'id': id,
+                                              'userID': _user.uid,
+                                              'attendanceId': data['id'],
+                                              'timestamp': DateTime.now(),
+                                              'date': today,
+                                              'time': time,
+                                              'type': 'sortieMatin',
+                                              'content':
+                                                  '${_userData.nom} ${_userData.prenom} à pointé son sortie de pause à $time',
+                                              'isRead': false,
+                                              'validé': false,
+                                              'typeNot': 'pointage'
+                                            });
+                                          },
+                                          icon: Image.asset(
+                                              'assets/fingerprint.png')),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Text(
+                                'Validation...',
+                                style: TextStyle(fontSize: size.width * 0.05),
+                              );
+                      } else if (data['entréAM'] == '') {
+                        return data['sent'] == false
+                            ? Column(
+                                children: [
+                                  Text('Retour',
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.05,
+                                          fontWeight: FontWeight.bold)),
+                                  SizedBox(
+                                    height: size.height * 0.02,
+                                  ),
+                                  Center(
+                                    child: SizedBox(
+                                      width: size.width * 0.25,
+                                      height: size.width * 0.3,
+                                      child: IconButton(
+                                          style: const ButtonStyle(
+                                              foregroundColor:
+                                                  WidgetStatePropertyAll(
+                                                      Colors.white),
+                                              backgroundColor:
+                                                  WidgetStatePropertyAll(
+                                                      Color.fromARGB(
+                                                          255, 30, 60, 100))),
+                                          onPressed: () {
+                                            final String id = generateId();
+                                            FirebaseFirestore.instance
+                                                .collection('Attendance')
+                                                .doc(data['id'])
+                                                .update({
+                                              'entréAM': time,
+                                              'sent': true
+                                            });
+                                            FirebaseFirestore.instance
+                                                .collection('Notification')
+                                                .doc(id)
+                                                .set({
+                                              'id': id,
+                                              'userID': _user.uid,
+                                              'attendanceId': data['id'],
+                                              'timestamp': DateTime.now(),
+                                              'date': today,
+                                              'time': time,
+                                              'type': 'entréAM',
+                                              'content':
+                                                  '${_userData.nom} ${_userData.prenom} à pointé son entrée après la pause à $time',
+                                              'isRead': false,
+                                              'validé': false,
+                                              'typeNot': 'pointage'
+                                            });
+                                          },
+                                          icon: Image.asset(
+                                              'assets/fingerprint.png')),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Text(
+                                'Validation...',
+                                style: TextStyle(fontSize: size.width * 0.05),
+                              );
+                      } else if (data['sortieAM'] == '') {
+                        return Column(
+                          children: [
+                            Text('Retour',
+                                style: TextStyle(
+                                    fontSize: size.width * 0.05,
+                                    fontWeight: FontWeight.bold)),
+                            SizedBox(
+                              height: size.height * 0.02,
+                            ),
+                            Center(
+                              child: SizedBox(
+                                width: size.width * 0.25,
+                                height: size.width * 0.3,
+                                child: IconButton(
+                                    style: const ButtonStyle(
+                                        foregroundColor:
+                                            WidgetStatePropertyAll(Colors.white),
+                                        backgroundColor: WidgetStatePropertyAll(
+                                            Color.fromARGB(255, 30, 60, 100))),
+                                    onPressed: () {
+                                      final String id = generateId();
+                                      FirebaseFirestore.instance
+                                          .collection('Attendance')
+                                          .doc(data['id'])
+                                          .update({
+                                        'sortieAM': time,
+                                        'sent': true,
+                                        'tardinessAM': _calculateTardiness(
+                                            data['entréAM'], time, 'AM')
+                                      });
+                                      FirebaseFirestore.instance
+                                          .collection('Notification')
+                                          .doc(id)
+                                          .set({
+                                        'id': id,
+                                        'userID': _user.uid,
+                                        'attendanceId': data['id'],
+                                        'timestamp': DateTime.now(),
+                                        'date': today,
+                                        'time': time,
+                                        'type': 'sortieAM',
+                                        'content':
+                                            '${_userData.nom} ${_userData.prenom} à pointé son sortie à $time',
+                                        'isRead': false,
+                                        'validé': false,
+                                        'typeNot': 'pointage'
+                                      });
+                                    },
+                                    icon: Image.asset('assets/fingerprint.png')),
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                      if (data['sortieAM'] != '' && data['sent'] == true) {
+                        return Text(
+                          'Validation...',
+                          style: TextStyle(fontSize: size.width * 0.05),
+                        );
+                      }
                     }
-                    if (data['sortieAM'] != '' && data['sent'] == true) {
-                      return Text(
-                        'Validation...',
-                        style: TextStyle(fontSize: size.width * 0.05),
-                      );
-                    }
-                  }
-                  return Text(
-                    'A demain',
-                    style: TextStyle(fontSize: size.width * 0.05),
-                  );
-                }),
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Divider(),
-            ),
-            Container(
-              width: size.width * 0.6,
-              decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
-              child: TextButton(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) {
-                      return const LeaveRequest();
-                    }));
-                  },
-                  child: const Text('Demander congé', style: TextStyle(color: Colors.white),)),
-            ),
-            SizedBox(height: size.height * 0.025),
-            Container(
-              width: size.width * 0.6,
-              decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
-              child: TextButton(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) {
-                      return const PermissionRequest();
-                    }));
-                  },
-                  child: const Text('Demander congé', style: TextStyle(color: Colors.white),)),
-            ),
-            SizedBox(height: size.height * 0.025),
-            Container(
-              width: size.width * 0.6,
-              decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
-              child: TextButton(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) {
-                      return const Scaffold();
-                    }));
-                  },
-                  child: const Text('Retards', style: TextStyle(color: Colors.white),)),
-            ),
-            SizedBox(height: size.height * 0.025),
-            Container(
-              width: size.width * 0.6,
-              decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
-              child: TextButton(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) {
-                      return const Scaffold();
-                    }));
-                  },
-                  child: const Text('Pénalités', style: TextStyle(color: Colors.white),)),
-            ),
-            SizedBox(height: size.height * 0.025),
-            Container(
-              width: size.width * 0.6,
-              decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
-              child: TextButton(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) {
-                      return const Scaffold();
-                    }));
-                  },
-                  child: const Text('Absences', style: TextStyle(color: Colors.white),)),
-            ),
-          ],
+                    return Text(
+                      'A demain',
+                      style: TextStyle(fontSize: size.width * 0.05),
+                    );
+                  }),
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Divider(),
+              ),
+              Container(
+                width: size.width * 0.6,
+                decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
+                child: TextButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                        return const LeaveRequest();
+                      }));
+                    },
+                    child: const Text('Demander congé', style: TextStyle(color: Colors.white),)),
+              ),
+              SizedBox(height: size.height * 0.025),
+              Container(
+                width: size.width * 0.6,
+                decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
+                child: TextButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                        return const PermissionRequest();
+                      }));
+                    },
+                    child: const Text('Demander congé', style: TextStyle(color: Colors.white),)),
+              ),
+              SizedBox(height: size.height * 0.025),
+              Container(
+                width: size.width * 0.6,
+                decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
+                child: TextButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                        return const Scaffold();
+                      }));
+                    },
+                    child: const Text('Retards', style: TextStyle(color: Colors.white),)),
+              ),
+              SizedBox(height: size.height * 0.025),
+              Container(
+                width: size.width * 0.6,
+                decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
+                child: TextButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                        return const Scaffold();
+                      }));
+                    },
+                    child: const Text('Pénalités', style: TextStyle(color: Colors.white),)),
+              ),
+              SizedBox(height: size.height * 0.025),
+              Container(
+                width: size.width * 0.6,
+                decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
+                child: TextButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                        return const Scaffold();
+                      }));
+                    },
+                    child: const Text('Absences', style: TextStyle(color: Colors.white),)),
+              ),
+            ],
+          ),
         ),
       ),
     );

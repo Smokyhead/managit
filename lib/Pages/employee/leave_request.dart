@@ -69,7 +69,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
   String formattedDate = "";
   String formattedDate1 = "";
   String formattedDate2 = "";
-  LeaveDuration? _leaveDuration = LeaveDuration.prolonge;
+  LeaveDuration _leaveDuration = LeaveDuration.prolonge;
+  String? _leaveDurationString;
   LeaveType? _selectedLeaveType = LeaveType.congeAnnuel;
   final User? _user = FirebaseAuth.instance.currentUser;
   late UserData _userData;
@@ -120,11 +121,10 @@ class _LeaveRequestState extends State<LeaveRequest> {
     return dateTime2.difference(dateTime1).inDays;
   }
 
-  Future<void> saveLeaveData({
+  Future<void> saveLeaveDataOneDay({
     required String userId,
     required String leaveType,
-    required DateTime startDate,
-    required DateTime endDate,
+    required DateTime date,
     required String reason,
   }) async {
     try {
@@ -147,6 +147,59 @@ class _LeaveRequestState extends State<LeaveRequest> {
       FirebaseFirestore.instance.collection('LeaveRequests').doc(leaveId).set({
         'userId': userId,
         'leaveType': leaveType,
+        'date': Timestamp.fromDate(date),
+        'reason': reason,
+        'status': 'pending', // Initial status can be pending
+        'requestDate': Timestamp.now(), // Date of the request
+      });
+
+      print('Leave request saved successfully.');
+    } catch (e) {
+      print('Error saving leave request: $e');
+    }
+  }
+
+  void onSubmitLeaveRequestOneDay() {
+    String leaveType = _selectedLeaveType!.displayName;
+    DateTime date = _selectedDate!;
+    String reason = reasonController.text;
+    String userId = _user!.uid;
+    saveLeaveDataOneDay(
+      userId: userId,
+      leaveType: leaveType,
+      date: date,
+      reason: reason,
+    );
+  }
+
+  Future<void> saveLeaveData(
+      {required String userId,
+      required String leaveType,
+      required DateTime startDate,
+      required DateTime endDate,
+      required String reason,
+      required String leaveDuration}) async {
+    try {
+      final String notificationId = generateId();
+      final String leaveId = generateId();
+      FirebaseFirestore.instance
+          .collection('Notification')
+          .doc(notificationId)
+          .set({
+        'id': notificationId,
+        'attendanceId': leaveId,
+        'userID': _user!.uid,
+        'timestamp': DateTime.now(),
+        'content':
+            '${_userData.nom} ${_userData.prenom} souhaite prendre un congé\nTapez pour voir les détails',
+        'isRead': false,
+        'validé': false,
+        'typeNot': 'leaveRequest'
+      });
+      FirebaseFirestore.instance.collection('LeaveRequests').doc(leaveId).set({
+        'userId': userId,
+        'leaveType': leaveType,
+        'leaveDuration': leaveDuration,
         'startDate': Timestamp.fromDate(startDate),
         'endDate': Timestamp.fromDate(endDate),
         'reason': reason,
@@ -166,13 +219,14 @@ class _LeaveRequestState extends State<LeaveRequest> {
     DateTime endDate = _selectedDate2!;
     String reason = reasonController.text;
     String userId = _user!.uid;
+    String leaveDuration = _leaveDurationString!;
     saveLeaveData(
-      userId: userId,
-      leaveType: leaveType,
-      startDate: startDate,
-      endDate: endDate,
-      reason: reason,
-    );
+        userId: userId,
+        leaveType: leaveType,
+        startDate: startDate,
+        endDate: endDate,
+        reason: reason,
+        leaveDuration: leaveDuration);
   }
 
   @override
@@ -211,7 +265,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     groupValue: _leaveDuration,
                     onChanged: (LeaveDuration? value) {
                       setState(() {
-                        _leaveDuration = value;
+                        _leaveDuration = value!;
+                        _leaveDurationString = value.toString();
                       });
                     },
                   ),
@@ -223,7 +278,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     groupValue: _leaveDuration,
                     onChanged: (LeaveDuration? value) {
                       setState(() {
-                        _leaveDuration = value;
+                        _leaveDuration = value!;
+                        _leaveDurationString = value.toString();
                       });
                     },
                   ),
@@ -236,14 +292,6 @@ class _LeaveRequestState extends State<LeaveRequest> {
                       start: size.width * 0.04,
                       end: size.width * 0.01),
                   decoration: const BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                          color: Color.fromARGB(255, 229, 229, 229),
-                          spreadRadius: 5,
-                          blurRadius: 10,
-                          offset: Offset.zero)
-                    ],
-                    borderRadius: BorderRadius.all(Radius.circular(20)),
                     color: Color.fromARGB(255, 224, 227, 241),
                   ),
                   alignment: Alignment.centerLeft,
@@ -510,11 +558,41 @@ class _LeaveRequestState extends State<LeaveRequest> {
                 ),
                 SizedBox(height: size.height * 0.05),
                 const Text(
+                  "Nature de congé",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: size.height * 0.01),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: size.width * 0.05),
+                  width: size.width * 0.9,
+                  color: const Color.fromARGB(255, 224, 227, 241),
+                  child: DropdownButtonFormField<LeaveType>(
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                    ),
+                    isExpanded: true,
+                    value: _selectedLeaveType,
+                    onChanged: (LeaveType? newValue) {
+                      setState(() {
+                        _selectedLeaveType = newValue;
+                      });
+                    },
+                    items: LeaveType.values.map((LeaveType leaveType) {
+                      return DropdownMenuItem<LeaveType>(
+                        value: leaveType,
+                        child: Text(leaveType.displayName),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                SizedBox(height: size.height * 0.05),
+                const Text(
                   "Motif de la demande",
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: size.height * 0.01),
                 TextFormField(
+                  textCapitalization: TextCapitalization.sentences,
                   controller: reasonController,
                   maxLines: 5,
                   decoration: InputDecoration(
@@ -540,35 +618,6 @@ class _LeaveRequestState extends State<LeaveRequest> {
                   },
                 ),
                 SizedBox(height: size.height * 0.05),
-                const Text(
-                  "Nature de congé",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-                SizedBox(height: size.height * 0.01),
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: size.width * 0.05),
-                  width: size.width * 0.9,
-                  color: const Color.fromARGB(255, 240, 240, 240),
-                  child: DropdownButtonFormField<LeaveType>(
-                    decoration: const InputDecoration(
-                      border: InputBorder.none,
-                    ),
-                    isExpanded: true,
-                    value: _selectedLeaveType,
-                    onChanged: (LeaveType? newValue) {
-                      setState(() {
-                        _selectedLeaveType = newValue;
-                      });
-                    },
-                    items: LeaveType.values.map((LeaveType leaveType) {
-                      return DropdownMenuItem<LeaveType>(
-                        value: leaveType,
-                        child: Text(leaveType.displayName),
-                      );
-                    }).toList(),
-                  ),
-                ),
-                SizedBox(height: size.height * 0.05),
                 Center(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
@@ -583,14 +632,19 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     ),
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
+                        if (_leaveDuration == LeaveDuration.journee) {
+                          onSubmitLeaveRequestOneDay();
+                        } else {
+                          onSubmitLeaveRequest();
+                        }
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content:
                                 Text('Demande de congé soumise avec succès'),
                           ),
                         );
-                        onSubmitLeaveRequest();
                       }
+                      Navigator.of(context).pop();
                     },
                     child: const Text(
                       'Soumettre',
