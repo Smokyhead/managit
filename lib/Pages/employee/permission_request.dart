@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
@@ -280,17 +282,46 @@ class _PermissionRequestState extends State<PermissionRequest> {
                                 ),
                               ),
                               onPressed: () async {
-                                _selectedEndTime = await showTimePicker(
+                                if (_selectedStartTime == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          "Veuillez d'abord sélectionner l'heure de début."),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                final TimeOfDay? pickedEndTime =
+                                    await showTimePicker(
                                   context: context,
-                                  initialTime: TimeOfDay.now(),
+                                  initialTime: _selectedStartTime!,
                                 );
-                                setState(() {
-                                  if (_selectedEndTime != null) {
-                                    formattedEndTime =
-                                        _selectedEndTime!.format(context);
-                                    endTimeContr.text = formattedEndTime;
+
+                                if (pickedEndTime != null) {
+                                  final int startInMinutes =
+                                      _selectedStartTime!.hour * 60 +
+                                          _selectedStartTime!.minute;
+                                  final int endInMinutes =
+                                      pickedEndTime.hour * 60 +
+                                          pickedEndTime.minute;
+
+                                  if (endInMinutes - startInMinutes <= 240) {
+                                    setState(() {
+                                      _selectedEndTime = pickedEndTime;
+                                      formattedEndTime =
+                                          _selectedEndTime!.format(context);
+                                      endTimeContr.text = formattedEndTime;
+                                    });
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            "La durée maximale est de 4 heures."),
+                                      ),
+                                    );
                                   }
-                                });
+                                }
                               },
                               child: Text(
                                 formattedEndTime.isEmpty
@@ -346,6 +377,16 @@ class _PermissionRequestState extends State<PermissionRequest> {
                             ),
                           ),
                           onPressed: () {
+                            if (_selectedStartTime == null ||
+                                _selectedEndTime == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      "Veuillez sélectionner l'heure de début et l'heure de fin."),
+                                ),
+                              );
+                              return;
+                            }
                             onSubmitPermissionRequest();
                           },
                           child: const Text(

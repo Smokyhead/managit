@@ -419,7 +419,7 @@ class _HomeState extends State<Home> {
                         return const PermissionRequest();
                       }));
                     },
-                    child: const Text('Demander congé', style: TextStyle(color: Colors.white),)),
+                    child: const Text('Demander Autorisation', style: TextStyle(color: Colors.white),)),
               ),
               SizedBox(height: size.height * 0.025),
               Container(
