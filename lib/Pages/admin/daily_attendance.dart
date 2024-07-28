@@ -62,20 +62,20 @@ class _DailyAttendanceState extends State<DailyAttendance> {
   }
 
   String calculateDuration(String startTime, String endTime) {
-  // Parse the input time strings into DateTime objects
-  DateTime start = DateTime.parse('2000-01-01 $startTime:00');
-  DateTime end = DateTime.parse('2000-01-01 $endTime:00');
+    // Parse the input time strings into DateTime objects
+    DateTime start = DateTime.parse('2000-01-01 $startTime:00');
+    DateTime end = DateTime.parse('2000-01-01 $endTime:00');
 
-  // Calculate the difference between the end and start times
-  Duration difference = end.difference(start);
+    // Calculate the difference between the end and start times
+    Duration difference = end.difference(start);
 
-  // Extract hours and minutes from the difference
-  int hours = difference.inHours;
-  int minutes = difference.inMinutes.remainder(60);
+    // Extract hours and minutes from the difference
+    int hours = difference.inHours;
+    int minutes = difference.inMinutes.remainder(60);
 
-  // Return the formatted duration as a string
-  return '${hours}h ${minutes}m';
-}
+    // Return the formatted duration as a string
+    return '${hours}h ${minutes}m';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -158,8 +158,8 @@ class _DailyAttendanceState extends State<DailyAttendance> {
                       return DataRow(cells: [
                         DataCell(Text('${item['Nom']} ${item['Prénom']}')),
                         DataCell(Text(item['Environnement'] ?? 'Onsite')),
-                        DataCell(Text(item['ABSENCE'] ?? 'non')),
-                        DataCell(Text(item['RETARD'] ?? '')),
+                        DataCell(Text(item['absence'] ?? 'Oui')),
+                        DataCell(Text(item['retard'] ?? '')),
                         DataCell(Text(item['entréMatin'] ?? '')),
                         DataCell(Text(item['sortieMatin'] ?? '')),
                         DataCell(
@@ -186,7 +186,3 @@ class _DailyAttendanceState extends State<DailyAttendance> {
 
 // ajut d utilisateur: telephone, projet, nombre de mois effectués (date d'embauche)
 // absence : plus qu'un jour liste des absences de tous les utilisateurs (pénalités)
-
-//demande congé : nature
-
-// autorisation: pas plus que 4 heures

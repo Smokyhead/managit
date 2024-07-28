@@ -135,11 +135,11 @@ class _LeaveRequestState extends State<LeaveRequest> {
           .doc(notificationId)
           .set({
         'id': notificationId,
-        'attendanceId': leaveId,
+        'leaveId': leaveId,
         'userID': _user!.uid,
         'timestamp': DateTime.now(),
         'content':
-            '${_userData.nom} ${_userData.prenom} souhaite prendre un congé\nTapez pour voir les détails',
+            '${_userData.nom} ${_userData.prenom} souhaite prendre un congé.\nTapez pour voir les détails.',
         'isRead': false,
         'validé': false,
         'typeNot': 'leaveRequest'

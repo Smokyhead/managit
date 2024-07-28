@@ -1,5 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:math';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:iconly/iconly.dart';
@@ -58,6 +60,16 @@ class _PermissionRequestState extends State<PermissionRequest> {
     });
   }
 
+  String generateId() {
+    final random = Random();
+    const chars =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const length = 20;
+
+    return String.fromCharCodes(Iterable.generate(
+        length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
+  }
+
   void savePermissionData({
     required String userId,
     required DateTime date,
@@ -65,12 +77,31 @@ class _PermissionRequestState extends State<PermissionRequest> {
     required TimeOfDay endTime,
     required String reason,
   }) {
-    FirebaseFirestore.instance.collection('permissions').add({
+    final String notificationId = generateId();
+    final String authId = generateId();
+    FirebaseFirestore.instance.collection('Autorisation').doc(authId).set({
+      'id': authId,
       'userId': userId,
       'date': date,
       'startTime': '${startTime.hour}:${startTime.minute}',
       'endTime': '${endTime.hour}:${endTime.minute}',
       'reason': reason,
+      'status': 'pending',
+      'requestDate': Timestamp.now(),
+    });
+    FirebaseFirestore.instance
+        .collection('Notification')
+        .doc(notificationId)
+        .set({
+      'id': notificationId,
+      'authId': authId,
+      'userID': _user!.uid,
+      'timestamp': DateTime.now(),
+      'content':
+          '${_userData.nom} ${_userData.prenom} souhaite prendre une autorisation.\nTapez pour voir les détails.',
+      'isRead': false,
+      'validé': false,
+      'typeNot': 'authRequest'
     });
   }
 
@@ -91,11 +122,10 @@ class _PermissionRequestState extends State<PermissionRequest> {
 
   @override
   Widget build(BuildContext context) {
-    reasonController.text = 'Tapez ici votre raison';
     Size size = MediaQuery.of(context).size;
     return Scaffold(
         appBar: AppBar(
-          title: const Text('Demande de permission'),
+          title: const Text("Demande d'autorisation"),
           centerTitle: true,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -113,7 +143,7 @@ class _PermissionRequestState extends State<PermissionRequest> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        "Date de la permission",
+                        "Date de l'autorisation",
                         style: TextStyle(
                             fontSize: 20, fontWeight: FontWeight.w600),
                       ),
@@ -305,7 +335,6 @@ class _PermissionRequestState extends State<PermissionRequest> {
                                   final int endInMinutes =
                                       pickedEndTime.hour * 60 +
                                           pickedEndTime.minute;
-
                                   if (endInMinutes - startInMinutes <= 240) {
                                     setState(() {
                                       _selectedEndTime = pickedEndTime;
@@ -314,6 +343,11 @@ class _PermissionRequestState extends State<PermissionRequest> {
                                       endTimeContr.text = formattedEndTime;
                                     });
                                   } else {
+                                    setState(() {
+                                      _selectedEndTime = null;
+                                      formattedEndTime = '';
+                                    });
+
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content: Text(
@@ -356,10 +390,9 @@ class _PermissionRequestState extends State<PermissionRequest> {
                       TextField(
                         controller: reasonController,
                         maxLines: 4,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
+                        decoration: const InputDecoration(
+                          hintText: 'Tapez ici votre raison',
+                          border: OutlineInputBorder(),
                         ),
                       ),
                       SizedBox(height: size.height * 0.05),
@@ -378,16 +411,24 @@ class _PermissionRequestState extends State<PermissionRequest> {
                           ),
                           onPressed: () {
                             if (_selectedStartTime == null ||
-                                _selectedEndTime == null) {
+                                _selectedEndTime == null ||
+                                reasonController.text.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
-                                      "Veuillez sélectionner l'heure de début et l'heure de fin."),
+                                      "Veuillez entrer les informations de la demande."),
                                 ),
                               );
-                              return;
+                            } else {
+                              onSubmitPermissionRequest();
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      "Demande d'autorisation soumise avec succès"),
+                                ),
+                              );
                             }
-                            onSubmitPermissionRequest();
                           },
                           child: const Text(
                             'Soumettre',

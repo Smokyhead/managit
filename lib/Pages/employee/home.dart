@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:managit/models/user_model.dart';
 import 'package:managit/pages/connection/connection.dart';
 import 'package:managit/pages/employee/leave_request.dart';
+import 'package:managit/pages/employee/notifications_user.dart';
 import 'package:managit/pages/employee/permission_request.dart';
 
 class Home extends StatefulWidget {
@@ -21,7 +22,7 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   final User? _user = FirebaseAuth.instance.currentUser;
   final String today = DateFormat('dd/MM/yyyy').format(DateTime.now());
-  final String time = DateFormat('HH:mm').format(DateTime.now());
+  String time = DateFormat('HH:mm').format(DateTime.now());
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late UserData _userData;
   var sent = false;
@@ -104,7 +105,13 @@ class _HomeState extends State<Home> {
         backgroundColor: const Color.fromARGB(255, 30, 60, 100),
         foregroundColor: Colors.white,
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.notifications))
+          IconButton(
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) {
+                  return const NotificationsUser();
+                }));
+              },
+              icon: const Icon(Icons.notifications))
         ],
       ),
       body: SingleChildScrollView(
@@ -118,7 +125,8 @@ class _HomeState extends State<Home> {
                   child: Text(
                     DateFormat('dd - MM - yyyy').format(DateTime.now()),
                     style: TextStyle(
-                        fontWeight: FontWeight.w400, fontSize: size.width * 0.05),
+                        fontWeight: FontWeight.w400,
+                        fontSize: size.width * 0.05),
                   ),
                 ),
               ),
@@ -155,12 +163,19 @@ class _HomeState extends State<Home> {
                             height: size.width * 0.3,
                             child: IconButton(
                                 style: ButtonStyle(
-                                    fixedSize: WidgetStatePropertyAll(size * 0.1),
-                                    foregroundColor: const WidgetStatePropertyAll(
-                                        Colors.white),
-                                    backgroundColor: const WidgetStatePropertyAll(
-                                        Color.fromARGB(255, 30, 60, 100))),
+                                    fixedSize:
+                                        WidgetStatePropertyAll(size * 0.1),
+                                    foregroundColor:
+                                        const WidgetStatePropertyAll(
+                                            Colors.white),
+                                    backgroundColor:
+                                        const WidgetStatePropertyAll(
+                                            Color.fromARGB(255, 30, 60, 100))),
                                 onPressed: () {
+                                  setState(() {
+                                    time = DateFormat('HH:mm')
+                                        .format(DateTime.now());
+                                  });
                                   final String notificationId = generateId();
                                   final String attendanceId = generateId();
                                   FirebaseFirestore.instance
@@ -174,7 +189,13 @@ class _HomeState extends State<Home> {
                                     'entréAM': '',
                                     'sortieMatin': '',
                                     'sortieAM': '',
-                                    'sent': true
+                                    'shiftMatin': '',
+                                    'shiftAM': '',
+                                    'sent': true,
+                                    'absence': 'non',
+                                    'environnement': 'Onsite',
+                                    'prod': '',
+                                    'retard': ''
                                   });
                                   FirebaseFirestore.instance
                                       .collection('Notification')
@@ -225,6 +246,10 @@ class _HomeState extends State<Home> {
                                                       Color.fromARGB(
                                                           255, 30, 60, 100))),
                                           onPressed: () {
+                                            setState(() {
+                                              time = DateFormat('HH:mm')
+                                                  .format(DateTime.now());
+                                            });
                                             final String id = generateId();
                                             FirebaseFirestore.instance
                                                 .collection('Attendance')
@@ -291,6 +316,10 @@ class _HomeState extends State<Home> {
                                                       Color.fromARGB(
                                                           255, 30, 60, 100))),
                                           onPressed: () {
+                                            setState(() {
+                                              time = DateFormat('HH:mm')
+                                                  .format(DateTime.now());
+                                            });
                                             final String id = generateId();
                                             FirebaseFirestore.instance
                                                 .collection('Attendance')
@@ -343,11 +372,15 @@ class _HomeState extends State<Home> {
                                 height: size.width * 0.3,
                                 child: IconButton(
                                     style: const ButtonStyle(
-                                        foregroundColor:
-                                            WidgetStatePropertyAll(Colors.white),
+                                        foregroundColor: WidgetStatePropertyAll(
+                                            Colors.white),
                                         backgroundColor: WidgetStatePropertyAll(
                                             Color.fromARGB(255, 30, 60, 100))),
                                     onPressed: () {
+                                      setState(() {
+                                        time = DateFormat('HH:mm')
+                                            .format(DateTime.now());
+                                      });
                                       final String id = generateId();
                                       FirebaseFirestore.instance
                                           .collection('Attendance')
@@ -376,7 +409,8 @@ class _HomeState extends State<Home> {
                                         'typeNot': 'pointage'
                                       });
                                     },
-                                    icon: Image.asset('assets/fingerprint.png')),
+                                    icon:
+                                        Image.asset('assets/fingerprint.png')),
                               ),
                             ),
                           ],
@@ -400,62 +434,87 @@ class _HomeState extends State<Home> {
               ),
               Container(
                 width: size.width * 0.6,
-                decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
+                decoration: const BoxDecoration(
+                    color: Color.fromARGB(255, 30, 60, 100)),
                 child: TextButton(
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
                         return const LeaveRequest();
                       }));
                     },
-                    child: const Text('Demander congé', style: TextStyle(color: Colors.white),)),
+                    child: const Text(
+                      'Demander congé',
+                      style: TextStyle(color: Colors.white),
+                    )),
               ),
               SizedBox(height: size.height * 0.025),
               Container(
                 width: size.width * 0.6,
-                decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
+                decoration: const BoxDecoration(
+                    color: Color.fromARGB(255, 30, 60, 100)),
                 child: TextButton(
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
                         return const PermissionRequest();
                       }));
                     },
-                    child: const Text('Demander Autorisation', style: TextStyle(color: Colors.white),)),
+                    child: const Text(
+                      'Demander autorisation',
+                      style: TextStyle(color: Colors.white),
+                    )),
               ),
               SizedBox(height: size.height * 0.025),
               Container(
                 width: size.width * 0.6,
-                decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
+                decoration: const BoxDecoration(
+                    color: Color.fromARGB(255, 30, 60, 100)),
                 child: TextButton(
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
                         return const Scaffold();
                       }));
                     },
-                    child: const Text('Retards', style: TextStyle(color: Colors.white),)),
+                    child: const Text(
+                      'Retards',
+                      style: TextStyle(color: Colors.white),
+                    )),
               ),
               SizedBox(height: size.height * 0.025),
               Container(
                 width: size.width * 0.6,
-                decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
+                decoration: const BoxDecoration(
+                    color: Color.fromARGB(255, 30, 60, 100)),
                 child: TextButton(
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
                         return const Scaffold();
                       }));
                     },
-                    child: const Text('Pénalités', style: TextStyle(color: Colors.white),)),
+                    child: const Text(
+                      'Pénalités',
+                      style: TextStyle(color: Colors.white),
+                    )),
               ),
               SizedBox(height: size.height * 0.025),
               Container(
                 width: size.width * 0.6,
-                decoration: const BoxDecoration(color: Color.fromARGB(255, 30, 60, 100)),
+                decoration: const BoxDecoration(
+                    color: Color.fromARGB(255, 30, 60, 100)),
                 child: TextButton(
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                      Navigator.push(context,
+                          MaterialPageRoute(builder: (context) {
                         return const Scaffold();
                       }));
                     },
-                    child: const Text('Absences', style: TextStyle(color: Colors.white),)),
+                    child: const Text(
+                      'Absences',
+                      style: TextStyle(color: Colors.white),
+                    )),
               ),
             ],
           ),

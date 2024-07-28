@@ -55,9 +55,6 @@ class _MonthSythesisState extends State<MonthSythesis> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Monthly Synthesis'),
-      ),
       body: FutureBuilder<List<UserTardiness>>(
         future: _userTardinessList,
         builder: (context, snapshot) {
