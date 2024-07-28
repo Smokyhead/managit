@@ -90,6 +90,33 @@ class _HomeState extends State<Home> {
     }
   }
 
+  Duration calculateDuration(String startTime, String endTime) {
+    // Parse the start time
+    List<String> startParts = startTime.split(':');
+    int startHour = int.parse(startParts[0]);
+    int startMinute = int.parse(startParts[1]);
+
+    // Parse the end time
+    List<String> endParts = endTime.split(':');
+    int endHour = int.parse(endParts[0]);
+    int endMinute = int.parse(endParts[1]);
+
+    // Create TimeOfDay objects
+    TimeOfDay start = TimeOfDay(hour: startHour, minute: startMinute);
+    TimeOfDay end = TimeOfDay(hour: endHour, minute: endMinute);
+
+    // Calculate the difference in minutes
+    int startInMinutes = start.hour * 60 + start.minute;
+    int endInMinutes = end.hour * 60 + end.minute;
+
+    int differenceInMinutes = endInMinutes - startInMinutes;
+
+    // Convert the difference to a Duration
+    Duration duration = Duration(minutes: differenceInMinutes);
+
+    return duration;
+  }
+
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
@@ -251,10 +278,14 @@ class _HomeState extends State<Home> {
                                                   .format(DateTime.now());
                                             });
                                             final String id = generateId();
+                                            Duration duration =
+                                                calculateDuration(
+                                                    data['entréMatin'], time);
                                             FirebaseFirestore.instance
                                                 .collection('Attendance')
                                                 .doc(data['id'])
                                                 .update({
+                                              'shiftMatin': duration.toString(),
                                               'sortieMatin': time,
                                               'sent': true,
                                               'tardinessMatin':
@@ -359,7 +390,7 @@ class _HomeState extends State<Home> {
                       } else if (data['sortieAM'] == '') {
                         return Column(
                           children: [
-                            Text('Retour',
+                            Text('Sortie',
                                 style: TextStyle(
                                     fontSize: size.width * 0.05,
                                     fontWeight: FontWeight.bold)),
@@ -382,10 +413,21 @@ class _HomeState extends State<Home> {
                                             .format(DateTime.now());
                                       });
                                       final String id = generateId();
+                                      Duration duration = calculateDuration(
+                                          data['entréAM'], time);
+
+                                      String prod = sumDurations(
+                                          data['shiftMatin'], data['shiftAM']);
+                                      String retard = sumDurations(
+                                          data['tardinessMatin'], _calculateTardiness(
+                                            data['entréAM'], time, 'AM').toString());
                                       FirebaseFirestore.instance
                                           .collection('Attendance')
                                           .doc(data['id'])
                                           .update({
+                                        // 'retard': retard,
+                                        'prod': prod,
+                                        'shiftAM': duration.toString(),
                                         'sortieAM': time,
                                         'sent': true,
                                         'tardinessAM': _calculateTardiness(
@@ -523,7 +565,27 @@ class _HomeState extends State<Home> {
     );
   }
 
-  int _calculateTardiness(String entryTime, String exitTime, String shift) {
+  Duration parseDuration(String time) {
+    List<String> parts = time.split(':');
+    int hours = int.parse(parts[0]);
+    int minutes = int.parse(parts[1]);
+    return Duration(hours: hours, minutes: minutes);
+  }
+
+  String sumDurations(String duration1, String duration2) {
+    Duration d1 = parseDuration(duration1);
+    Duration d2 = parseDuration(duration2);
+
+    Duration sum = d1 + d2;
+
+    int hours = sum.inHours;
+    int minutes = sum.inMinutes % 60;
+
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+  }
+
+  Duration _calculateTardiness(
+      String entryTime, String exitTime, String shift) {
     final entry = DateFormat('HH:mm').parse(entryTime);
     final exit = DateFormat('HH:mm').parse(exitTime);
 
@@ -540,17 +602,14 @@ class _HomeState extends State<Home> {
       tardiness = shiftEnd.difference(entry) - exit.difference(shiftStart);
     }
 
-    int tardinessMinutes = tardiness.inMinutes;
-
     // Update tardiness record
-    _updateTardinessRecord(shift, tardinessMinutes);
+    _updateTardinessRecord(shift, tardiness);
 
-    return tardinessMinutes;
+    return tardiness;
   }
 
   // Update tardiness record
-  Future<void> _updateTardinessRecord(
-      String shift, int tardinessMinutes) async {
+  Future<void> _updateTardinessRecord(String shift, Duration tardiness) async {
     final String tardinessId = generateId();
     final tardinessRef =
         FirebaseFirestore.instance.collection('Tardiness').doc(tardinessId);
@@ -560,35 +619,8 @@ class _HomeState extends State<Home> {
       'userID': _user!.uid,
       'date': today,
       'shift': shift,
-      'tardiness': tardinessMinutes * (-1),
+      'tardinessHours': tardiness.inHours,
+      'tardinessMinutes': tardiness.inMinutes % 60,
     }, SetOptions(merge: true));
   }
 }
-
-/*final String id = generateId();
-                                          FirebaseFirestore.instance
-                                              .collection('Attendance')
-                                              .doc(data['id'])
-                                              .update({
-                                            'sortieAM': time,
-                                            'sent': true,
-                                            'tardinessAM': _calculateTardiness(
-                                                data['entréAM'], time, 'AM')
-                                          });
-                                          FirebaseFirestore.instance
-                                              .collection('Notification')
-                                              .doc(id)
-                                              .set({
-                                            'id': id,
-                                            'userID': _user.uid,
-                                            'attendanceId': data['id'],
-                                            'timestamp': DateTime.now(),
-                                            'date': today,
-                                            'time': time,
-                                            'type': 'sortieAM',
-                                            'content':
-                                                '${_userData.nom} ${_userData.prenom} à pointé son sortie à $time',
-                                            'isRead': false,
-                                            'validé': false,
-                                            'typeNot': 'pointage'
-                                          });*/
