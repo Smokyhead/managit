@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +16,7 @@ import 'package:managit/pages/admin/settings.dart';
 import 'package:managit/pages/admin/tardiness_management.dart';
 import 'package:managit/pages/admin/user_management.dart';
 import 'package:managit/pages/connection/connection.dart';
+import 'package:badges/badges.dart' as badges;
 
 class AdminAppBar extends StatefulWidget {
   const AdminAppBar({super.key});
@@ -26,6 +28,7 @@ class AdminAppBar extends StatefulWidget {
 class AdminAppBarState extends State<AdminAppBar> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   int _selectedPageIndex = 1;
+  int n = 0;
 
   Future<void> signOut() async {
     showDialog(
@@ -61,7 +64,7 @@ class AdminAppBarState extends State<AdminAppBar> {
     const AbsenceManagement(),
     const TardinessManagement(),
     const PenaltyManagement(),
-    const Settings()
+    const AdminSettings()
   ];
 
   final List<String> _pageTitles = [
@@ -96,13 +99,44 @@ class AdminAppBarState extends State<AdminAppBar> {
           style: TextStyle(fontSize: size.width * 0.0475),
         ),
         actions: [
-          IconButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) {
-                  return const Notifications();
-                }));
-              },
-              icon: const Icon(Icons.notifications))
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('Notification')
+                .where('isRead', isEqualTo: false)
+                .snapshots(),
+            builder: (context, snapshots) {
+              if (!snapshots.hasData || snapshots.data!.docs.isEmpty) {
+                return IconButton(
+                  onPressed: () {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) {
+                      return const Notifications();
+                    }));
+                  },
+                  icon: const Icon(Icons.notifications),
+                );
+              }
+
+              int unreadCount = snapshots.data!.docs.length;
+
+              return badges.Badge(
+                position: badges.BadgePosition.custom(end: 5),
+                badgeContent: Text(
+                  unreadCount.toString(),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) {
+                      return const Notifications();
+                    }));
+                  },
+                  icon: const Icon(Icons.notifications),
+                ),
+              );
+            },
+          ),
         ],
       ),
       drawer: Drawer(

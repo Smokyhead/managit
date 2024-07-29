@@ -90,7 +90,7 @@ class _HomeState extends State<Home> {
     }
   }
 
-  Duration calculateDuration(String startTime, String endTime) {
+  String calculateDuration(String startTime, String endTime) {
     // Parse the start time
     List<String> startParts = startTime.split(':');
     int startHour = int.parse(startParts[0]);
@@ -111,10 +111,12 @@ class _HomeState extends State<Home> {
 
     int differenceInMinutes = endInMinutes - startInMinutes;
 
-    // Convert the difference to a Duration
-    Duration duration = Duration(minutes: differenceInMinutes);
+    // Calculate hours and minutes
+    int hours = differenceInMinutes ~/ 60;
+    int minutes = differenceInMinutes % 60;
 
-    return duration;
+    // Return the duration in '0H 0m' format
+    return '${hours}H ${minutes}m';
   }
 
   @override
@@ -164,6 +166,18 @@ class _HomeState extends State<Home> {
                       .where('date', isEqualTo: today)
                       .snapshots(),
                   builder: (context, snapshots) {
+                    late int day;
+                    late String message;
+                    day = DateTime.now().weekday;
+                    if (day == 1 ||
+                        day == 2 ||
+                        day == 3 ||
+                        day == 4 ||
+                        day == 7) {
+                      message = 'A demain.';
+                    } else {
+                      message = "Bon weekend.";
+                    }
                     if (snapshots.connectionState == ConnectionState.waiting) {
                       return Center(
                         child: Platform.isAndroid
@@ -200,8 +214,9 @@ class _HomeState extends State<Home> {
                                             Color.fromARGB(255, 30, 60, 100))),
                                 onPressed: () {
                                   setState(() {
-                                    time = DateFormat('HH:mm')
-                                        .format(DateTime.now());
+                                    // time = DateFormat('HH:mm')
+                                    //     .format(DateTime.now());
+                                    time = '09:02';
                                   });
                                   final String notificationId = generateId();
                                   final String attendanceId = generateId();
@@ -274,18 +289,18 @@ class _HomeState extends State<Home> {
                                                           255, 30, 60, 100))),
                                           onPressed: () {
                                             setState(() {
-                                              time = DateFormat('HH:mm')
-                                                  .format(DateTime.now());
+                                              // time = DateFormat('HH:mm')
+                                              //     .format(DateTime.now());
+                                              time = '13:00';
                                             });
                                             final String id = generateId();
-                                            Duration duration =
-                                                calculateDuration(
-                                                    data['entréMatin'], time);
+                                            String shift = calculateDuration(
+                                                data['entréMatin'], time);
                                             FirebaseFirestore.instance
                                                 .collection('Attendance')
                                                 .doc(data['id'])
                                                 .update({
-                                              'shiftMatin': duration.toString(),
+                                              'shiftMatin': shift,
                                               'sortieMatin': time,
                                               'sent': true,
                                               'tardinessMatin':
@@ -348,8 +363,9 @@ class _HomeState extends State<Home> {
                                                           255, 30, 60, 100))),
                                           onPressed: () {
                                             setState(() {
-                                              time = DateFormat('HH:mm')
-                                                  .format(DateTime.now());
+                                              // time = DateFormat('HH:mm')
+                                              //     .format(DateTime.now());
+                                              time = '14:05';
                                             });
                                             final String id = generateId();
                                             FirebaseFirestore.instance
@@ -409,25 +425,24 @@ class _HomeState extends State<Home> {
                                             Color.fromARGB(255, 30, 60, 100))),
                                     onPressed: () {
                                       setState(() {
-                                        time = DateFormat('HH:mm')
-                                            .format(DateTime.now());
+                                        // time = DateFormat('HH:mm')
+                                        //     .format(DateTime.now());
+                                        time = '18:10';
                                       });
                                       final String id = generateId();
-                                      Duration duration = calculateDuration(
+                                      String shift = calculateDuration(
                                           data['entréAM'], time);
-
                                       String prod = sumDurations(
-                                          data['shiftMatin'], data['shiftAM']);
-                                      String retard = sumDurations(
-                                          data['tardinessMatin'], _calculateTardiness(
-                                            data['entréAM'], time, 'AM').toString());
+                                          data['shiftMatin'], shift);
+                                      String retard =
+                                          calculateDailyTardiness(prod);
                                       FirebaseFirestore.instance
                                           .collection('Attendance')
                                           .doc(data['id'])
                                           .update({
-                                        // 'retard': retard,
+                                        'retard': retard,
                                         'prod': prod,
-                                        'shiftAM': duration.toString(),
+                                        'shiftAM': shift,
                                         'sortieAM': time,
                                         'sent': true,
                                         'tardinessAM': _calculateTardiness(
@@ -466,7 +481,7 @@ class _HomeState extends State<Home> {
                       }
                     }
                     return Text(
-                      'A demain',
+                      message,
                       style: TextStyle(fontSize: size.width * 0.05),
                     );
                   }),
@@ -474,8 +489,14 @@ class _HomeState extends State<Home> {
                 padding: EdgeInsets.all(8.0),
                 child: Divider(),
               ),
+              Padding(
+                padding: EdgeInsets.all(size.height * 0.01),
+                child: Image.asset('assets/picture.png',
+                    scale: size.height * 0.025),
+              ),
               Container(
-                width: size.width * 0.6,
+                width: size.width * 0.8,
+                height: size.height * 0.07,
                 decoration: const BoxDecoration(
                     color: Color.fromARGB(255, 30, 60, 100)),
                 child: TextButton(
@@ -485,14 +506,16 @@ class _HomeState extends State<Home> {
                         return const LeaveRequest();
                       }));
                     },
-                    child: const Text(
+                    child: Text(
                       'Demander congé',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(
+                          color: Colors.white, fontSize: size.width * 0.055),
                     )),
               ),
               SizedBox(height: size.height * 0.025),
               Container(
-                width: size.width * 0.6,
+                width: size.width * 0.8,
+                height: size.height * 0.07,
                 decoration: const BoxDecoration(
                     color: Color.fromARGB(255, 30, 60, 100)),
                 child: TextButton(
@@ -502,14 +525,16 @@ class _HomeState extends State<Home> {
                         return const PermissionRequest();
                       }));
                     },
-                    child: const Text(
+                    child: Text(
                       'Demander autorisation',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(
+                          color: Colors.white, fontSize: size.width * 0.055),
                     )),
               ),
               SizedBox(height: size.height * 0.025),
               Container(
-                width: size.width * 0.6,
+                width: size.width * 0.8,
+                height: size.height * 0.07,
                 decoration: const BoxDecoration(
                     color: Color.fromARGB(255, 30, 60, 100)),
                 child: TextButton(
@@ -519,14 +544,16 @@ class _HomeState extends State<Home> {
                         return const Scaffold();
                       }));
                     },
-                    child: const Text(
+                    child: Text(
                       'Retards',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(
+                          color: Colors.white, fontSize: size.width * 0.055),
                     )),
               ),
               SizedBox(height: size.height * 0.025),
               Container(
-                width: size.width * 0.6,
+                width: size.width * 0.8,
+                height: size.height * 0.07,
                 decoration: const BoxDecoration(
                     color: Color.fromARGB(255, 30, 60, 100)),
                 child: TextButton(
@@ -536,14 +563,16 @@ class _HomeState extends State<Home> {
                         return const Scaffold();
                       }));
                     },
-                    child: const Text(
+                    child: Text(
                       'Pénalités',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(
+                          color: Colors.white, fontSize: size.width * 0.055),
                     )),
               ),
               SizedBox(height: size.height * 0.025),
               Container(
-                width: size.width * 0.6,
+                width: size.width * 0.8,
+                height: size.height * 0.07,
                 decoration: const BoxDecoration(
                     color: Color.fromARGB(255, 30, 60, 100)),
                 child: TextButton(
@@ -553,9 +582,10 @@ class _HomeState extends State<Home> {
                         return const Scaffold();
                       }));
                     },
-                    child: const Text(
+                    child: Text(
                       'Absences',
-                      style: TextStyle(color: Colors.white),
+                      style: TextStyle(
+                          color: Colors.white, fontSize: size.width * 0.055),
                     )),
               ),
             ],
@@ -565,62 +595,74 @@ class _HomeState extends State<Home> {
     );
   }
 
-  Duration parseDuration(String time) {
-    List<String> parts = time.split(':');
-    int hours = int.parse(parts[0]);
-    int minutes = int.parse(parts[1]);
-    return Duration(hours: hours, minutes: minutes);
-  }
-
   String sumDurations(String duration1, String duration2) {
-    Duration d1 = parseDuration(duration1);
-    Duration d2 = parseDuration(duration2);
+    // Parse the first duration
+    List<String> parts1 = duration1.split(' ');
+    int hours1 = int.parse(parts1[0].replaceAll('H', ''));
+    int minutes1 = int.parse(parts1[1].replaceAll('m', ''));
 
-    Duration sum = d1 + d2;
+    // Parse the second duration
+    List<String> parts2 = duration2.split(' ');
+    int hours2 = int.parse(parts2[0].replaceAll('H', ''));
+    int minutes2 = int.parse(parts2[1].replaceAll('m', ''));
 
-    int hours = sum.inHours;
-    int minutes = sum.inMinutes % 60;
+    // Calculate total hours and minutes
+    int totalMinutes = (hours1 * 60 + minutes1) + (hours2 * 60 + minutes2);
+    int totalHours = totalMinutes ~/ 60;
+    int remainingMinutes = totalMinutes % 60;
 
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+    // Return the sum of durations in '0H 0m' format
+    return '${totalHours}H ${remainingMinutes}m';
   }
 
-  Duration _calculateTardiness(
-      String entryTime, String exitTime, String shift) {
+  String _calculateTardiness(String entryTime, String exitTime, String shift) {
     final entry = DateFormat('HH:mm').parse(entryTime);
     final exit = DateFormat('HH:mm').parse(exitTime);
 
     Duration tardiness;
     if (shift == 'Matin') {
-      final shiftStart = DateTime(entry.year, entry.month, entry.day, 8, 0);
-      final shiftEnd = DateTime(entry.year, entry.month, entry.day, 12, 0);
+      final shiftStart = DateTime(entry.year, entry.month, entry.day, 9, 0);
+      final shiftEnd = DateTime(entry.year, entry.month, entry.day, 13, 0);
 
       tardiness = shiftEnd.difference(entry) - exit.difference(shiftStart);
     } else {
-      final shiftStart = DateTime(entry.year, entry.month, entry.day, 13, 0);
-      final shiftEnd = DateTime(entry.year, entry.month, entry.day, 17, 0);
+      final shiftStart = DateTime(entry.year, entry.month, entry.day, 14, 0);
+      final shiftEnd = DateTime(entry.year, entry.month, entry.day, 18, 0);
 
       tardiness = shiftEnd.difference(entry) - exit.difference(shiftStart);
     }
 
-    // Update tardiness record
-    _updateTardinessRecord(shift, tardiness);
-
-    return tardiness;
+    // Convert tardiness to string in the format '0H 0m'
+    return _durationToString(tardiness);
   }
 
-  // Update tardiness record
-  Future<void> _updateTardinessRecord(String shift, Duration tardiness) async {
-    final String tardinessId = generateId();
-    final tardinessRef =
-        FirebaseFirestore.instance.collection('Tardiness').doc(tardinessId);
+  String _durationToString(Duration duration) {
+    int hours = duration.inHours * (-1);
+    int minutes = duration.inMinutes.remainder(60) * (-1);
 
-    await tardinessRef.set({
-      'id': tardinessId,
-      'userID': _user!.uid,
-      'date': today,
-      'shift': shift,
-      'tardinessHours': tardiness.inHours,
-      'tardinessMinutes': tardiness.inMinutes % 60,
-    }, SetOptions(merge: true));
+    return '${hours}H ${minutes}m';
+  }
+
+  String calculateDailyTardiness(String recordedDuration) {
+    // Split the recorded duration into hours and minutes
+    List<String> parts = recordedDuration.split(' ');
+    int recordedHours = int.parse(parts[0].replaceAll('H', ''));
+    int recordedMinutes = int.parse(parts[1].replaceAll('m', ''));
+
+    // Convert recorded duration to minutes
+    int recordedTotalMinutes = (recordedHours * 60) + recordedMinutes;
+
+    // Define the normal work duration in minutes (8 hours)
+    int normalWorkDurationMinutes = 8 * 60;
+
+    // Calculate the tardiness in minutes
+    int tardinessMinutes = normalWorkDurationMinutes - recordedTotalMinutes;
+
+    // Convert tardiness back to hours and minutes
+    int tardinessHours = tardinessMinutes ~/ 60;
+    int tardinessRemainingMinutes = tardinessMinutes % 60;
+
+    // Return the tardiness as a string in '0H 0m' format
+    return '${tardinessHours}H ${tardinessRemainingMinutes}m';
   }
 }

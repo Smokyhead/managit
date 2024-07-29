@@ -62,65 +62,196 @@ class NotificationsState extends State<Notifications> {
                         itemBuilder: (context, index) {
                           var data = snapshots.data!.docs[index].data()
                               as Map<String, dynamic>;
-                          return ListTile(
-                            title: Text(data['content'],
-                                style: TextStyle(fontSize: size.width * 0.04)),
-                            subtitle: Column(
-                              children: [
-                                data['validé'] == false
-                                    ? Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceAround,
-                                        children: [
-                                          ElevatedButton(
-                                              onPressed: () {
-                                                FirebaseFirestore.instance
-                                                    .collection('Notification')
-                                                    .doc(data['id'])
-                                                    .update({'validé': true});
-                                                FirebaseFirestore.instance
-                                                    .collection('Attendance')
-                                                    .doc(data['attendanceId'])
-                                                    .update({'sent': false});
-                                              },
-                                              child: const Text('Valider')),
-                                          ElevatedButton(
-                                              onPressed: () {
-                                                FirebaseFirestore.instance
-                                                    .collection('Notification')
-                                                    .doc(data['id'])
-                                                    .update({'validé': true});
-                                                FirebaseFirestore.instance
-                                                    .collection('Attendance')
-                                                    .doc(data['attendanceId'])
-                                                    .update({
-                                                  data['type']: '',
-                                                  'sent': false
-                                                });
-                                              },
-                                              child: const Text('Décliner'))
-                                        ],
-                                      )
-                                    : const SizedBox.shrink(),
-                                SizedBox(
-                                  height: size.height * 0.01,
-                                ),
-                                Row(
-                                  children: [
-                                    data['date'] ==
-                                            DateFormat('dd/MM/yyyy')
-                                                .format(DateTime.now())
-                                        ? const Text("Aujourd'hui",
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.w500))
-                                        : Text(data['date'],
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.w500))
-                                  ],
-                                )
-                              ],
-                            ),
-                          );
+                          if (data['typeNot'] == 'pointage') {
+                            return ListTile(
+                              tileColor: data['isRead'] == false
+                                  ? const Color.fromARGB(255, 215, 230, 245)
+                                  : Colors.transparent,
+                              title: Text(data['content'],
+                                  style:
+                                      TextStyle(fontSize: size.width * 0.04)),
+                              subtitle: Column(
+                                children: [
+                                  data['validé'] == false
+                                      ? Padding(
+                                          padding: EdgeInsets.all(
+                                              size.height * 0.01),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceAround,
+                                            children: [
+                                              ElevatedButton(
+                                                  style: const ButtonStyle(
+                                                      shape: WidgetStatePropertyAll(
+                                                          BeveledRectangleBorder()),
+                                                      foregroundColor:
+                                                          WidgetStatePropertyAll(
+                                                              Colors.white),
+                                                      backgroundColor:
+                                                          WidgetStatePropertyAll(
+                                                              Color.fromARGB(
+                                                                  255,
+                                                                  30,
+                                                                  60,
+                                                                  100))),
+                                                  onPressed: () {
+                                                    FirebaseFirestore.instance
+                                                        .collection(
+                                                            'Notification')
+                                                        .doc(data['id'])
+                                                        .update(
+                                                            {'validé': true,
+                                                          'isRead': true});
+                                                    FirebaseFirestore.instance
+                                                        .collection(
+                                                            'Attendance')
+                                                        .doc(data[
+                                                            'attendanceId'])
+                                                        .update(
+                                                            {'sent': false});
+                                                  },
+                                                  child: Text(
+                                                    'Valider',
+                                                    style: TextStyle(
+                                                        fontSize:
+                                                            size.height * 0.02),
+                                                  )),
+                                              ElevatedButton(
+                                                  style: const ButtonStyle(
+                                                    side:
+                                                        WidgetStatePropertyAll(
+                                                            BorderSide(
+                                                                color: Color
+                                                                    .fromARGB(
+                                                                        255,
+                                                                        30,
+                                                                        60,
+                                                                        100))),
+                                                    shape: WidgetStatePropertyAll(
+                                                        BeveledRectangleBorder()),
+                                                    foregroundColor:
+                                                        WidgetStatePropertyAll(
+                                                            Color.fromARGB(255,
+                                                                30, 60, 100)),
+                                                  ),
+                                                  onPressed: () {
+                                                    switch (data['type']) {
+                                                      case ('entréMatin'):
+                                                        FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                                'Notification')
+                                                            .doc(data['id'])
+                                                            .update({
+                                                          'validé': true,
+                                                          'isRead': true
+                                                        });
+                                                        FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                                'Attendance')
+                                                            .doc(data[
+                                                                'attendanceId'])
+                                                            .delete();
+                                                      case ('sortieMatin'):
+                                                        FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                                'Notification')
+                                                            .doc(data['id'])
+                                                            .update({
+                                                          'validé': true,
+                                                          'isRead': true
+                                                        });
+                                                        FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                                'Attendance')
+                                                            .doc(data[
+                                                                'attendanceId'])
+                                                            .update({
+                                                          'shiftMatin': '',
+                                                          'sortieMatin': '',
+                                                          'sent': false,
+                                                          'tardinessMatin': ''
+                                                        });
+                                                      case ('entréAM'):
+                                                        FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                                'Notification')
+                                                            .doc(data['id'])
+                                                            .update({
+                                                          'validé': true,
+                                                          'isRead': true
+                                                        });
+                                                        FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                                'Attendance')
+                                                            .doc(data[
+                                                                'attendanceId'])
+                                                            .update({
+                                                          'sent': false,
+                                                          'entréAM': ''
+                                                        });
+                                                      case ('sortieAM'):
+                                                        FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                                'Notification')
+                                                            .doc(data['id'])
+                                                            .update({
+                                                          'validé': true,
+                                                          'isRead': true
+                                                        });
+                                                        FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                                'Attendance')
+                                                            .doc(data[
+                                                                'attendanceId'])
+                                                            .update({
+                                                          'shiftAM': '',
+                                                          'sortieAM': '',
+                                                          'sent': false,
+                                                          'tardinessAM': '',
+                                                          'prod': '',
+                                                          'retard': ''
+                                                        });
+                                                    }
+                                                  },
+                                                  child: Text(
+                                                    'Refuser',
+                                                    style: TextStyle(
+                                                        fontSize:
+                                                            size.height * 0.02),
+                                                  ))
+                                            ],
+                                          ),
+                                        )
+                                      : const SizedBox.shrink(),
+                                  SizedBox(
+                                    height: size.height * 0.01,
+                                  ),
+                                  Row(
+                                    children: [
+                                      data['date'] ==
+                                              DateFormat('dd/MM/yyyy')
+                                                  .format(DateTime.now())
+                                          ? const Text("Aujourd'hui",
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.w500))
+                                          : Text(data['date'],
+                                              style: const TextStyle(
+                                                  fontWeight: FontWeight.w500))
+                                    ],
+                                  )
+                                ],
+                              ),
+                            );
+                          }
+                          return const SizedBox.shrink();
                         });
                   }
                 })));
