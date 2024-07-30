@@ -70,7 +70,6 @@ class _LeaveRequestState extends State<LeaveRequest> {
   String formattedDate1 = "";
   String formattedDate2 = "";
   LeaveDuration _leaveDuration = LeaveDuration.prolonge;
-  String? _leaveDurationString;
   LeaveType? _selectedLeaveType = LeaveType.congeAnnuel;
   final User? _user = FirebaseAuth.instance.currentUser;
   late UserData _userData;
@@ -147,7 +146,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
       FirebaseFirestore.instance.collection('LeaveRequests').doc(leaveId).set({
         'userId': userId,
         'leaveType': leaveType,
-        'date': Timestamp.fromDate(date),
+        'date': date.toString(),
+        'days': 1,
         'reason': reason,
         'status': 'pending', // Initial status can be pending
         'requestDate': Timestamp.now(), // Date of the request
@@ -172,13 +172,13 @@ class _LeaveRequestState extends State<LeaveRequest> {
     );
   }
 
-  Future<void> saveLeaveData(
-      {required String userId,
-      required String leaveType,
-      required DateTime startDate,
-      required DateTime endDate,
-      required String reason,
-      required String leaveDuration}) async {
+  Future<void> saveLeaveData({
+    required String userId,
+    required String leaveType,
+    required DateTime startDate,
+    required DateTime endDate,
+    required String reason,
+  }) async {
     try {
       final String notificationId = generateId();
       final String leaveId = generateId();
@@ -187,7 +187,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
           .doc(notificationId)
           .set({
         'id': notificationId,
-        'attendanceId': leaveId,
+        'leaveId': leaveId,
         'userID': _user!.uid,
         'timestamp': DateTime.now(),
         'content':
@@ -199,9 +199,9 @@ class _LeaveRequestState extends State<LeaveRequest> {
       FirebaseFirestore.instance.collection('LeaveRequests').doc(leaveId).set({
         'userId': userId,
         'leaveType': leaveType,
-        'leaveDuration': leaveDuration,
-        'startDate': Timestamp.fromDate(startDate),
-        'endDate': Timestamp.fromDate(endDate),
+        'startDate': formattedDate1,
+        'endDate': formattedDate1,
+        'days': numberOfDays(formattedDate1, formattedDate2) + 1,
         'reason': reason,
         'status': 'pending', // Initial status can be pending
         'requestDate': Timestamp.now(), // Date of the request
@@ -219,14 +219,12 @@ class _LeaveRequestState extends State<LeaveRequest> {
     DateTime endDate = _selectedDate2!;
     String reason = reasonController.text;
     String userId = _user!.uid;
-    String leaveDuration = _leaveDurationString!;
     saveLeaveData(
         userId: userId,
         leaveType: leaveType,
         startDate: startDate,
         endDate: endDate,
-        reason: reason,
-        leaveDuration: leaveDuration);
+        reason: reason);
   }
 
   @override
@@ -266,7 +264,6 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     onChanged: (LeaveDuration? value) {
                       setState(() {
                         _leaveDuration = value!;
-                        _leaveDurationString = value.toString();
                       });
                     },
                   ),
@@ -279,7 +276,6 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     onChanged: (LeaveDuration? value) {
                       setState(() {
                         _leaveDuration = value!;
-                        _leaveDurationString = value.toString();
                       });
                     },
                   ),
@@ -632,9 +628,13 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     ),
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        if (_leaveDuration == LeaveDuration.journee) {
+                        if (_leaveDuration == LeaveDuration.journee &&
+                            dateContr.text.isNotEmpty) {
                           onSubmitLeaveRequestOneDay();
-                        } else {
+                        }
+                        if (_leaveDuration == LeaveDuration.prolonge &&
+                            dateContr1.text.isNotEmpty &&
+                            dateContr2.text.isNotEmpty) {
                           onSubmitLeaveRequest();
                         }
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -643,8 +643,14 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                 Text('Demande de congé soumise avec succès'),
                           ),
                         );
+                        Navigator.of(context).pop();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Veuillez séléctionner la date.'),
+                          ),
+                        );
                       }
-                      Navigator.of(context).pop();
                     },
                     child: const Text(
                       'Soumettre',

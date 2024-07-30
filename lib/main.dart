@@ -12,6 +12,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:managit/pages/admin/admin_appbar.dart';
 import 'package:managit/pages/connection/connection.dart';
 import 'package:managit/pages/employee/home.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,7 @@ void main() async {
     androidProvider: AndroidProvider.debug,
     appleProvider: AppleProvider.debug,
   );
+  timeago.setLocaleMessages('fr', timeago.FrMessages());
   runApp(const MyApp());
 }
 

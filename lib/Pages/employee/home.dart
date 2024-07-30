@@ -11,6 +11,7 @@ import 'package:managit/pages/connection/connection.dart';
 import 'package:managit/pages/employee/leave_request.dart';
 import 'package:managit/pages/employee/notifications_user.dart';
 import 'package:managit/pages/employee/permission_request.dart';
+import 'package:badges/badges.dart' as badges;
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -134,13 +135,44 @@ class _HomeState extends State<Home> {
         backgroundColor: const Color.fromARGB(255, 30, 60, 100),
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) {
-                  return const NotificationsUser();
-                }));
-              },
-              icon: const Icon(Icons.notifications))
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('UserNotification')
+                .where('isRead', isEqualTo: false)
+                .snapshots(),
+            builder: (context, snapshots) {
+              if (!snapshots.hasData || snapshots.data!.docs.isEmpty) {
+                return IconButton(
+                  onPressed: () {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) {
+                      return const NotificationsUser();
+                    }));
+                  },
+                  icon: const Icon(Icons.notifications),
+                );
+              }
+
+              int unreadCount = snapshots.data!.docs.length;
+
+              return badges.Badge(
+                position: badges.BadgePosition.custom(end: 5),
+                badgeContent: Text(
+                  unreadCount.toString(),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                child: IconButton(
+                  onPressed: () {
+                    Navigator.push(context,
+                        MaterialPageRoute(builder: (context) {
+                      return const NotificationsUser();
+                    }));
+                  },
+                  icon: const Icon(Icons.notifications),
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: SingleChildScrollView(
