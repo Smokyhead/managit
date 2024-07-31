@@ -530,7 +530,8 @@ class _HomeState extends State<Home> {
                 width: size.width * 0.8,
                 height: size.height * 0.07,
                 decoration: const BoxDecoration(
-                    color: Color.fromARGB(255, 30, 60, 100)),
+                    color: Color.fromARGB(255, 30, 60, 100),
+                    borderRadius: BorderRadius.all(Radius.circular(5))),
                 child: TextButton(
                     onPressed: () {
                       Navigator.push(context,
@@ -549,7 +550,8 @@ class _HomeState extends State<Home> {
                 width: size.width * 0.8,
                 height: size.height * 0.07,
                 decoration: const BoxDecoration(
-                    color: Color.fromARGB(255, 30, 60, 100)),
+                    color: Color.fromARGB(255, 30, 60, 100),
+                    borderRadius: BorderRadius.all(Radius.circular(5))),
                 child: TextButton(
                     onPressed: () {
                       Navigator.push(context,
@@ -568,7 +570,8 @@ class _HomeState extends State<Home> {
                 width: size.width * 0.8,
                 height: size.height * 0.07,
                 decoration: const BoxDecoration(
-                    color: Color.fromARGB(255, 30, 60, 100)),
+                    color: Color.fromARGB(255, 30, 60, 100),
+                    borderRadius: BorderRadius.all(Radius.circular(5))),
                 child: TextButton(
                     onPressed: () {
                       Navigator.push(context,
@@ -587,7 +590,8 @@ class _HomeState extends State<Home> {
                 width: size.width * 0.8,
                 height: size.height * 0.07,
                 decoration: const BoxDecoration(
-                    color: Color.fromARGB(255, 30, 60, 100)),
+                    color: Color.fromARGB(255, 30, 60, 100),
+                    borderRadius: BorderRadius.all(Radius.circular(5))),
                 child: TextButton(
                     onPressed: () {
                       Navigator.push(context,
@@ -606,7 +610,8 @@ class _HomeState extends State<Home> {
                 width: size.width * 0.8,
                 height: size.height * 0.07,
                 decoration: const BoxDecoration(
-                    color: Color.fromARGB(255, 30, 60, 100)),
+                    color: Color.fromARGB(255, 30, 60, 100),
+                    borderRadius: BorderRadius.all(Radius.circular(5))),
                 child: TextButton(
                     onPressed: () {
                       Navigator.push(context,

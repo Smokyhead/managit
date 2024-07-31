@@ -59,7 +59,6 @@ extension LeaveTypeExtension on LeaveType {
 
 class _LeaveRequestState extends State<LeaveRequest> {
   final _formKey = GlobalKey<FormState>();
-  final reasonController = TextEditingController();
   final dateContr = TextEditingController();
   final dateContr1 = TextEditingController();
   final dateContr2 = TextEditingController();
@@ -124,7 +123,6 @@ class _LeaveRequestState extends State<LeaveRequest> {
     required String userId,
     required String leaveType,
     required DateTime date,
-    required String reason,
   }) async {
     try {
       final String notificationId = generateId();
@@ -139,16 +137,20 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'timestamp': DateTime.now(),
         'content':
             '${_userData.nom} ${_userData.prenom} souhaite prendre un congé.\nTapez pour voir les détails.',
+        'user': '${_userData.nom} ${_userData.prenom}',
+        'date': formattedDate,
+        'days': 1,
         'isRead': false,
         'validé': false,
-        'typeNot': 'leaveRequest'
+        'typeNot': 'leaveRequest',
+        'status': 'pending'
       });
       FirebaseFirestore.instance.collection('LeaveRequests').doc(leaveId).set({
+        'id': leaveId,
         'userId': userId,
         'leaveType': leaveType,
-        'date': date.toString(),
+        'date': formattedDate,
         'days': 1,
-        'reason': reason,
         'status': 'pending', // Initial status can be pending
         'requestDate': Timestamp.now(), // Date of the request
       });
@@ -162,13 +164,11 @@ class _LeaveRequestState extends State<LeaveRequest> {
   void onSubmitLeaveRequestOneDay() {
     String leaveType = _selectedLeaveType!.displayName;
     DateTime date = _selectedDate!;
-    String reason = reasonController.text;
     String userId = _user!.uid;
     saveLeaveDataOneDay(
       userId: userId,
       leaveType: leaveType,
       date: date,
-      reason: reason,
     );
   }
 
@@ -177,7 +177,6 @@ class _LeaveRequestState extends State<LeaveRequest> {
     required String leaveType,
     required DateTime startDate,
     required DateTime endDate,
-    required String reason,
   }) async {
     try {
       final String notificationId = generateId();
@@ -191,18 +190,23 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'userID': _user!.uid,
         'timestamp': DateTime.now(),
         'content':
-            '${_userData.nom} ${_userData.prenom} souhaite prendre un congé\nTapez pour voir les détails',
+            '${_userData.nom} ${_userData.prenom} souhaite prendre un congé.\nTapez pour voir les détails.',
+        'user': '${_userData.nom} ${_userData.prenom}',
+        'startDate': formattedDate1,
+        'endDate': formattedDate2,
+        'days': numberOfDays(formattedDate1, formattedDate2) + 1,
         'isRead': false,
         'validé': false,
-        'typeNot': 'leaveRequest'
+        'typeNot': 'leaveRequest',
+        'status': 'pending'
       });
       FirebaseFirestore.instance.collection('LeaveRequests').doc(leaveId).set({
+        'id': leaveId,
         'userId': userId,
         'leaveType': leaveType,
         'startDate': formattedDate1,
-        'endDate': formattedDate1,
+        'endDate': formattedDate2,
         'days': numberOfDays(formattedDate1, formattedDate2) + 1,
-        'reason': reason,
         'status': 'pending', // Initial status can be pending
         'requestDate': Timestamp.now(), // Date of the request
       });
@@ -217,14 +221,12 @@ class _LeaveRequestState extends State<LeaveRequest> {
     String leaveType = _selectedLeaveType!.displayName;
     DateTime startDate = _selectedDate1!;
     DateTime endDate = _selectedDate2!;
-    String reason = reasonController.text;
     String userId = _user!.uid;
     saveLeaveData(
         userId: userId,
         leaveType: leaveType,
         startDate: startDate,
-        endDate: endDate,
-        reason: reason);
+        endDate: endDate);
   }
 
   @override
@@ -581,39 +583,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     }).toList(),
                   ),
                 ),
-                SizedBox(height: size.height * 0.05),
-                const Text(
-                  "Motif de la demande",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
-                ),
-                SizedBox(height: size.height * 0.01),
-                TextFormField(
-                  textCapitalization: TextCapitalization.sentences,
-                  controller: reasonController,
-                  maxLines: 5,
-                  decoration: InputDecoration(
-                    hintText: 'Entrez le motif de votre demande de congé',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(
-                        color: Color.fromARGB(255, 30, 60, 100),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(
-                        color: Color.fromARGB(255, 30, 60, 100),
-                      ),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Veuillez entrer le motif de votre demande de congé';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: size.height * 0.05),
+                SizedBox(height: size.height * 0.2),
                 Center(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(

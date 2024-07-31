@@ -22,14 +22,42 @@ class _PermissionRequestState extends State<PermissionRequest> {
   final startTimeContr = TextEditingController();
   final endTimeContr = TextEditingController();
   DateTime? _selectedDate;
-  TimeOfDay? _selectedStartTime;
-  TimeOfDay? _selectedEndTime;
   String formattedDate = "";
-  String formattedStartTime = "";
-  String formattedEndTime = "";
   final User? _user = FirebaseAuth.instance.currentUser;
   // ignore: unused_field
   late UserData _userData;
+  int nhours = 0;
+  String? selectedStartTime;
+  String? selectedEndTime;
+
+  final List<String> hours = [
+    "09:00",
+    "10:00",
+    "11:00",
+    "12:00",
+    "13:00",
+    "14:00",
+    "15:00",
+    "16:00",
+    "17:00"
+  ];
+
+  List<String> getEndTimeOptions(String startTime) {
+    final startIndex = hours.indexOf(startTime);
+    final possibleEndTimes = hours.sublist(startIndex + 1).where((time) {
+      final difference = hours.indexOf(time) - startIndex;
+      return difference >= 1 && difference <= 4;
+    }).toList();
+
+    // Add 18:00 only if the start time is 14:00, 15:00, 16:00, or 17:00
+    if (['14:00', '15:00', '16:00', '17:00'].contains(startTime)) {
+      if (!possibleEndTimes.contains('18:00')) {
+        possibleEndTimes.add('18:00');
+      }
+    }
+
+    return possibleEndTimes;
+  }
 
   @override
   void initState() {
@@ -72,19 +100,19 @@ class _PermissionRequestState extends State<PermissionRequest> {
 
   void savePermissionData({
     required String userId,
-    required DateTime date,
-    required TimeOfDay startTime,
-    required TimeOfDay endTime,
+    required String date,
+    required String startTime,
+    required String endTime,
     required String reason,
   }) {
     final String notificationId = generateId();
-    final String authId = generateId();
-    FirebaseFirestore.instance.collection('Autorisation').doc(authId).set({
-      'id': authId,
+    final String autId = generateId();
+    FirebaseFirestore.instance.collection('Autorisation').doc(autId).set({
+      'id': autId,
       'userId': userId,
-      'date': date,
-      'startTime': '${startTime.hour}:${startTime.minute}',
-      'endTime': '${endTime.hour}:${endTime.minute}',
+      'date': formattedDate,
+      'startTime': selectedStartTime,
+      'endTime': selectedEndTime,
       'reason': reason,
       'status': 'pending',
       'requestDate': Timestamp.now(),
@@ -94,21 +122,39 @@ class _PermissionRequestState extends State<PermissionRequest> {
         .doc(notificationId)
         .set({
       'id': notificationId,
-      'authId': authId,
+      'autId': autId,
       'userID': _user!.uid,
+      'user': "${_userData.nom} ${_userData.prenom}",
       'timestamp': DateTime.now(),
       'content':
           '${_userData.nom} ${_userData.prenom} souhaite prendre une autorisation.\nTapez pour voir les détails.',
+      'date': formattedDate,
+      'startTime': selectedStartTime,
+      'endTime': selectedEndTime,
+      'hours': calculateHoursDifference(selectedStartTime!, selectedEndTime!),
       'isRead': false,
       'validé': false,
-      'typeNot': 'authRequest'
+      'typeNot': 'autRequest'
     });
   }
 
   void onSubmitPermissionRequest() {
-    DateTime date = _selectedDate!;
-    TimeOfDay startTime = _selectedStartTime!;
-    TimeOfDay endTime = _selectedEndTime!;
+    if (_selectedDate != null) {
+      if (_selectedDate!.weekday == DateTime.saturday ||
+          _selectedDate!.weekday == DateTime.sunday) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                "Les autorisations ne peuvent pas être demandées pour le week-end."),
+          ),
+        );
+        return;
+      }
+    }
+
+    String date = formattedDate;
+    String startTime = selectedStartTime!;
+    String endTime = selectedEndTime!;
     String reason = reasonController.text;
     String userId = _user!.uid;
     savePermissionData(
@@ -118,6 +164,28 @@ class _PermissionRequestState extends State<PermissionRequest> {
       endTime: endTime,
       reason: reason,
     );
+  }
+
+  int calculateHoursDifference(String startTime, String endTime) {
+    // Parse the start time and end time
+    TimeOfDay start = TimeOfDay(
+      hour: int.parse(startTime.split(':')[0]),
+      minute: int.parse(startTime.split(':')[1]),
+    );
+
+    TimeOfDay end = TimeOfDay(
+      hour: int.parse(endTime.split(':')[0]),
+      minute: int.parse(endTime.split(':')[1]),
+    );
+
+    // Calculate the difference in hours
+    int startInMinutes = start.hour * 60 + start.minute;
+    int endInMinutes = end.hour * 60 + end.minute;
+
+    int differenceInMinutes = endInMinutes - startInMinutes;
+    int differenceInHours = (differenceInMinutes / 60).floor();
+
+    return differenceInHours;
   }
 
   @override
@@ -223,61 +291,44 @@ class _PermissionRequestState extends State<PermissionRequest> {
                       Row(
                         children: [
                           Expanded(
-                            child: TextButton(
-                              style: ButtonStyle(
-                                side: WidgetStateProperty.all(
-                                  const BorderSide(
-                                    style: BorderStyle.solid,
+                            child: DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: const BorderSide(
                                     color: Color.fromARGB(255, 30, 60, 100),
                                   ),
+                                  borderRadius: BorderRadius.circular(15),
                                 ),
-                                elevation: WidgetStateProperty.all(6),
-                                backgroundColor: WidgetStateProperty.all(
-                                  const Color.fromARGB(255, 224, 227, 241),
-                                ),
-                                foregroundColor: WidgetStateProperty.all(
-                                  const Color.fromARGB(255, 30, 60, 100),
-                                ),
-                                shape: WidgetStateProperty.all(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: const BorderSide(
+                                    color: Color.fromARGB(255, 30, 60, 100),
                                   ),
+                                  borderRadius: BorderRadius.circular(15),
                                 ),
+                                filled: true,
+                                fillColor:
+                                    const Color.fromARGB(255, 224, 227, 241),
                               ),
-                              onPressed: () async {
-                                _selectedStartTime = await showTimePicker(
-                                  context: context,
-                                  initialTime: TimeOfDay.now(),
-                                );
+                              value: selectedStartTime,
+                              items: hours
+                                  .map(
+                                    (time) => DropdownMenuItem(
+                                      value: time,
+                                      child: Text(time),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
                                 setState(() {
-                                  if (_selectedStartTime != null) {
-                                    formattedStartTime =
-                                        _selectedStartTime!.format(context);
-                                    startTimeContr.text = formattedStartTime;
-                                  }
+                                  selectedStartTime = value;
+                                  selectedEndTime = null; // Reset end time
                                 });
                               },
-                              child: Text(
-                                formattedStartTime.isEmpty
-                                    ? "HH:MM"
-                                    : formattedStartTime,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w500, fontSize: 18),
-                              ),
+                              hint: const Text("Sélectionner"),
+                              icon: const Icon(IconlyLight.time_circle,
+                                  color: Color.fromARGB(255, 30, 60, 100)),
                             ),
                           ),
-                          IconButton(
-                            onPressed: () {
-                              setState(() {
-                                formattedStartTime = "";
-                                _selectedStartTime = null;
-                              });
-                            },
-                            icon: const Icon(
-                              IconlyBold.delete,
-                              color: Colors.red,
-                            ),
-                          )
                         ],
                       ),
                       SizedBox(height: size.height * 0.02),
@@ -290,148 +341,115 @@ class _PermissionRequestState extends State<PermissionRequest> {
                       Row(
                         children: [
                           Expanded(
-                            child: TextButton(
-                              style: ButtonStyle(
-                                side: WidgetStateProperty.all(
-                                  const BorderSide(
-                                    style: BorderStyle.solid,
+                            child: DropdownButtonFormField<String>(
+                              decoration: InputDecoration(
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: const BorderSide(
                                     color: Color.fromARGB(255, 30, 60, 100),
                                   ),
+                                  borderRadius: BorderRadius.circular(15),
                                 ),
-                                elevation: WidgetStateProperty.all(6),
-                                backgroundColor: WidgetStateProperty.all(
-                                  const Color.fromARGB(255, 224, 227, 241),
-                                ),
-                                foregroundColor: WidgetStateProperty.all(
-                                  const Color.fromARGB(255, 30, 60, 100),
-                                ),
-                                shape: WidgetStateProperty.all(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(15),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: const BorderSide(
+                                    color: Color.fromARGB(255, 30, 60, 100),
                                   ),
+                                  borderRadius: BorderRadius.circular(15),
                                 ),
+                                filled: true,
+                                fillColor:
+                                    const Color.fromARGB(255, 224, 227, 241),
                               ),
-                              onPressed: () async {
-                                if (_selectedStartTime == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                          "Veuillez d'abord sélectionner l'heure de début."),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                final TimeOfDay? pickedEndTime =
-                                    await showTimePicker(
-                                  context: context,
-                                  initialTime: _selectedStartTime!,
-                                );
-
-                                if (pickedEndTime != null) {
-                                  final int startInMinutes =
-                                      _selectedStartTime!.hour * 60 +
-                                          _selectedStartTime!.minute;
-                                  final int endInMinutes =
-                                      pickedEndTime.hour * 60 +
-                                          pickedEndTime.minute;
-                                  if (endInMinutes - startInMinutes <= 240) {
-                                    setState(() {
-                                      _selectedEndTime = pickedEndTime;
-                                      formattedEndTime =
-                                          _selectedEndTime!.format(context);
-                                      endTimeContr.text = formattedEndTime;
-                                    });
-                                  } else {
-                                    setState(() {
-                                      _selectedEndTime = null;
-                                      formattedEndTime = '';
-                                    });
-
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            "La durée maximale est de 4 heures."),
-                                      ),
-                                    );
-                                  }
-                                }
+                              value: selectedEndTime,
+                              items: selectedStartTime != null
+                                  ? getEndTimeOptions(selectedStartTime!)
+                                      .map(
+                                        (time) => DropdownMenuItem(
+                                          value: time,
+                                          child: Text(time),
+                                        ),
+                                      )
+                                      .toList()
+                                  : [],
+                              onChanged: (value) {
+                                setState(() {
+                                  selectedEndTime = value;
+                                });
                               },
-                              child: Text(
-                                formattedEndTime.isEmpty
-                                    ? "HH:MM"
-                                    : formattedEndTime,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w500, fontSize: 18),
-                              ),
+                              hint: const Text("Sélectionner"),
+                              icon: const Icon(IconlyLight.time_circle,
+                                  color: Color.fromARGB(255, 30, 60, 100)),
                             ),
                           ),
-                          IconButton(
-                            onPressed: () {
-                              setState(() {
-                                formattedEndTime = "";
-                                _selectedEndTime = null;
-                              });
-                            },
-                            icon: const Icon(
-                              IconlyBold.delete,
-                              color: Colors.red,
-                            ),
-                          )
                         ],
                       ),
-                      SizedBox(height: size.height * 0.02),
+                      SizedBox(height: size.height * 0.05),
                       const Text(
                         "Raison",
                         style: TextStyle(
                             fontSize: 20, fontWeight: FontWeight.w600),
                       ),
                       SizedBox(height: size.height * 0.01),
-                      TextField(
+                      TextFormField(
+                        textCapitalization: TextCapitalization.sentences,
                         controller: reasonController,
-                        maxLines: 4,
-                        decoration: const InputDecoration(
-                          hintText: 'Tapez ici votre raison',
-                          border: OutlineInputBorder(),
+                        maxLines: 5,
+                        decoration: InputDecoration(
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(
+                              color: Color.fromARGB(255, 30, 60, 100),
+                            ),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(
+                              color: Color.fromARGB(255, 30, 60, 100),
+                            ),
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                          filled: true,
+                          fillColor: const Color.fromARGB(255, 224, 227, 241),
+                          hintText: "Écrivez la raison ici...",
                         ),
                       ),
-                      SizedBox(height: size.height * 0.05),
+                      SizedBox(height: size.height * 0.1),
                       Center(
                         child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStateProperty.all(
+                              const Color.fromARGB(255, 30, 60, 100),
+                            ),
+                            foregroundColor:
+                                WidgetStateProperty.all(Colors.white),
+                            padding: WidgetStateProperty.all(
+                              EdgeInsets.symmetric(
                                 horizontal: size.width * 0.2,
-                                vertical: size.height * 0.02),
-                            backgroundColor:
-                                const Color.fromARGB(255, 30, 60, 100),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(15),
+                                vertical: size.height * 0.02,
+                              ),
+                            ),
+                            shape: WidgetStateProperty.all(
+                              RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(15),
+                              ),
                             ),
                           ),
                           onPressed: () {
-                            if (_selectedStartTime == null ||
-                                _selectedEndTime == null ||
+                            if (formattedDate.isEmpty ||
+                                selectedStartTime!.isEmpty ||
+                                selectedEndTime!.isEmpty ||
                                 reasonController.text.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
-                                      "Veuillez entrer les informations de la demande."),
+                                  content:
+                                      Text('Veuillez remplir tous les champs.'),
                                 ),
                               );
                             } else {
                               onSubmitPermissionRequest();
                               Navigator.of(context).pop();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      "Demande d'autorisation soumise avec succès"),
-                                ),
-                              );
                             }
                           },
                           child: const Text(
-                            'Soumettre',
+                            "Soumettre",
                             style: TextStyle(fontSize: 18),
                           ),
                         ),

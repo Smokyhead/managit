@@ -375,13 +375,12 @@ class NotificationsState extends State<Notifications> {
                             ),
                             onTap: () {
                               showBottomSheet(
+                                  shape: const BeveledRectangleBorder(),
                                   context: context,
                                   builder: (BuildContext context) {
-                                    return Container(
-                                      color: const Color.fromARGB(
-                                          255, 242, 248, 255),
+                                    return SizedBox(
                                       width: size.width,
-                                      height: size.height * 0.3,
+                                      height: size.height * 0.35,
                                       child: Padding(
                                         padding:
                                             EdgeInsets.all(size.width * 0.05),
@@ -398,78 +397,75 @@ class NotificationsState extends State<Notifications> {
                                             SizedBox(
                                               height: size.height * 0.01,
                                             ),
-                                            StreamBuilder(
-                                                stream: FirebaseFirestore
-                                                    .instance
-                                                    .collection('LeaveRequests')
-                                                    .where('userId',
-                                                        isEqualTo:
-                                                            data['userID'])
-                                                    .snapshots(),
-                                                builder: (context, snapshots) {
-                                                  if (snapshots
-                                                          .connectionState ==
-                                                      ConnectionState.waiting) {
-                                                    return const SizedBox
-                                                        .shrink();
-                                                  }
-                                                  final docs =
-                                                      snapshots.data?.docs;
-                                                  // ignore: unnecessary_cast
-                                                  final doc = docs!.first.data()
-                                                      as Map<String, dynamic>;
-                                                  return Column(
-                                                    children: [
-                                                      doc['days'] == 1
-                                                          ? Column(
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .start,
-                                                              children: [
-                                                                Text(
-                                                                    'Date:  ${doc['date']}',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            size.width *
-                                                                                0.05)),
-                                                                Text(
-                                                                    'Nombre de jours:  ${doc['days']}',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            size.width *
-                                                                                0.05))
-                                                              ],
-                                                            )
-                                                          : Column(
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .start,
-                                                              children: [
-                                                                Text(
-                                                                    'Date de début:  ${doc['startDate']}',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            size.width *
-                                                                                0.05)),
-                                                                Text(
-                                                                    'Date de fin:  ${doc['endDate']}',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            size.width *
-                                                                                0.05)),
-                                                                Text(
-                                                                    'Nombre de jours:  ${doc['days']}',
-                                                                    style: TextStyle(
-                                                                        fontSize:
-                                                                            size.width *
-                                                                                0.05))
-                                                              ],
-                                                            ),
-                                                      SizedBox(
-                                                        height:
-                                                            size.height * 0.02,
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                              children: [
+                                                Text(data['user'],
+                                                    style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600)),
+                                                SizedBox(
+                                                  height: size.height * 0.03,
+                                                ),
+                                                data['days'] == 1
+                                                    ? Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                              'Date:  ${data['date']}',
+                                                              style: TextStyle(
+                                                                  fontSize: size
+                                                                          .width *
+                                                                      0.05)),
+                                                          Text(
+                                                              'Nombre de jours:  ${data['days']}',
+                                                              style: TextStyle(
+                                                                  fontSize:
+                                                                      size.width *
+                                                                          0.05))
+                                                        ],
+                                                      )
+                                                    : SizedBox(
+                                                        width: size.width * 0.9,
+                                                        child: Column(
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .start,
+                                                          children: [
+                                                            Text(
+                                                                'Date de début:  "${data['startDate']}"',
+                                                                style: TextStyle(
+                                                                    fontSize: size
+                                                                            .width *
+                                                                        0.05)),
+                                                            Text(
+                                                                'Date de fin:  "${data['endDate']}"',
+                                                                style: TextStyle(
+                                                                    fontSize: size
+                                                                            .width *
+                                                                        0.05)),
+                                                            Text(
+                                                                'Nombre de jours:  "${data['days']}"',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        size.width *
+                                                                            0.05))
+                                                          ],
+                                                        ),
                                                       ),
-                                                      Row(
+                                                SizedBox(
+                                                  height: size.height * 0.02,
+                                                ),
+                                                data['status'] == 'pending'
+                                                    ? Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceEvenly,
                                                         children: [
                                                           ElevatedButton(
                                                               style: const ButtonStyle(
@@ -485,7 +481,84 @@ class NotificationsState extends State<Notifications> {
                                                                           30,
                                                                           60,
                                                                           100))),
-                                                              onPressed: () {},
+                                                              onPressed:
+                                                                  () async {
+                                                                final DocumentSnapshot<
+                                                                        Map<String,
+                                                                            dynamic>>
+                                                                    snapshot =
+                                                                    await FirebaseFirestore
+                                                                        .instance
+                                                                        .collection(
+                                                                            'User')
+                                                                        .doc(data[
+                                                                            'userID'])
+                                                                        .get();
+                                                                final userdata =
+                                                                    snapshot
+                                                                        .data();
+                                                                final String
+                                                                    notId =
+                                                                    generateId();
+                                                                FirebaseFirestore
+                                                                    .instance
+                                                                    .collection(
+                                                                        'UserNotification')
+                                                                    .doc(notId)
+                                                                    .set({
+                                                                  'id': notId,
+                                                                  'userID': data[
+                                                                      'userID'],
+                                                                  'timestamp':
+                                                                      DateTime
+                                                                          .now(),
+                                                                  'date': today,
+                                                                  'content':
+                                                                      'Votre demande de congé a été acceptée.\n ${data['days']} jours ont été retirés de votre solde de congé.',
+                                                                  'isRead':
+                                                                      false,
+                                                                });
+                                                                FirebaseFirestore
+                                                                    .instance
+                                                                    .collection(
+                                                                        'Notification')
+                                                                    .doc(data[
+                                                                        'id'])
+                                                                    .update({
+                                                                  'isRead':
+                                                                      true,
+                                                                  'validé':
+                                                                      true,
+                                                                  'status':
+                                                                      'Accepté'
+                                                                });
+                                                                FirebaseFirestore
+                                                                    .instance
+                                                                    .collection(
+                                                                        'LeaveRequests')
+                                                                    .doc(data[
+                                                                        'leaveId'])
+                                                                    .update({
+                                                                  'status':
+                                                                      'approved'
+                                                                });
+                                                                FirebaseFirestore
+                                                                    .instance
+                                                                    .collection(
+                                                                        'User')
+                                                                    .doc(data[
+                                                                        'userID'])
+                                                                    .update({
+                                                                  'Solde congé':
+                                                                      userdata![
+                                                                              'Solde congé'] -
+                                                                          data[
+                                                                              'days']
+                                                                });
+                                                                Navigator.of(
+                                                                    // ignore: use_build_context_synchronously
+                                                                    context).pop();
+                                                              },
                                                               child: Text(
                                                                 'Valider',
                                                                 style: TextStyle(
@@ -513,15 +586,64 @@ class NotificationsState extends State<Notifications> {
                                                                           60,
                                                                           100)),
                                                             ),
-                                                            onPressed: () {},
+                                                            onPressed: () {
+                                                              final String
+                                                                  notId =
+                                                                  generateId();
+                                                              FirebaseFirestore
+                                                                  .instance
+                                                                  .collection(
+                                                                      'UserNotification')
+                                                                  .doc(notId)
+                                                                  .set({
+                                                                'id': notId,
+                                                                'userID': data[
+                                                                    'userID'],
+                                                                'timestamp':
+                                                                    DateTime
+                                                                        .now(),
+                                                                'date': today,
+                                                                'content':
+                                                                    'Votre demande de congé a été refusé.',
+                                                                'isRead': false,
+                                                              });
+                                                              FirebaseFirestore
+                                                                  .instance
+                                                                  .collection(
+                                                                      'LeaveRequests')
+                                                                  .doc(data[
+                                                                      'leaveId'])
+                                                                  .delete();
+                                                              FirebaseFirestore
+                                                                  .instance
+                                                                  .collection(
+                                                                      'Notification')
+                                                                  .doc(data[
+                                                                      'id'])
+                                                                  .update({
+                                                                'isRead': true,
+                                                                'validé': true,
+                                                                'status':
+                                                                    'Refusé'
+                                                              });
+                                                              Navigator.of(
+                                                                  // ignore: use_build_context_synchronously
+                                                                  context).pop();
+                                                            },
                                                             child: const Text(
                                                                 'Refuser'),
                                                           )
                                                         ],
                                                       )
-                                                    ],
-                                                  );
-                                                })
+                                                    : Text(
+                                                        data['status'],
+                                                        style: TextStyle(
+                                                            fontSize:
+                                                                size.width *
+                                                                    0.055),
+                                                      ),
+                                              ],
+                                            )
                                           ],
                                         ),
                                       ),
