@@ -6,7 +6,7 @@ class UserData {
   String role = '';
   int soldeConge = 0;
   int congePris = 0;
-  int sanctions = 0;
+  double sanctions = 0;
   int soldeAnneePrec = 0;
 
   void fromMap(Map<String, dynamic> data) {
@@ -19,10 +19,5 @@ class UserData {
     congePris = data['Congé pris'] ?? 0;
     sanctions = data['Sanctions'] ?? 0;
     soldeAnneePrec = data['Solde congé année prec'] ?? 0;
-  }
-
-  @override
-  String toString() {
-    return 'UserData{id: $id, nom: $nom, prenom: $prenom, email: $email, role: $role, soldeConge: $soldeConge, congePris: $congePris, sanctions: $sanctions, soldeAnneePrec: $soldeAnneePrec}';
   }
 }

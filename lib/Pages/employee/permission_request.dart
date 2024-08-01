@@ -134,7 +134,8 @@ class _PermissionRequestState extends State<PermissionRequest> {
       'hours': calculateHoursDifference(selectedStartTime!, selectedEndTime!),
       'isRead': false,
       'validé': false,
-      'typeNot': 'autRequest'
+      'typeNot': 'autRequest',
+      'status': 'pending'
     });
   }
 
@@ -166,7 +167,7 @@ class _PermissionRequestState extends State<PermissionRequest> {
     );
   }
 
-  int calculateHoursDifference(String startTime, String endTime) {
+  double calculateHoursDifference(String startTime, String endTime) {
     // Parse the start time and end time
     TimeOfDay start = TimeOfDay(
       hour: int.parse(startTime.split(':')[0]),
@@ -185,7 +186,7 @@ class _PermissionRequestState extends State<PermissionRequest> {
     int differenceInMinutes = endInMinutes - startInMinutes;
     int differenceInHours = (differenceInMinutes / 60).floor();
 
-    return differenceInHours;
+    return differenceInHours as double;
   }
 
   @override
@@ -445,6 +446,12 @@ class _PermissionRequestState extends State<PermissionRequest> {
                               );
                             } else {
                               onSubmitPermissionRequest();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      "Demande d'autorisation soumise avec succès"),
+                                ),
+                              );
                               Navigator.of(context).pop();
                             }
                           },

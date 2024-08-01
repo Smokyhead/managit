@@ -651,8 +651,309 @@ class NotificationsState extends State<Notifications> {
                                   });
                             },
                           );
-                        case ('autorisationRequest'):
-                          ;
+                        case ('autRequest'):
+                          return ListTile(
+                            tileColor: data['isRead'] == false
+                                ? const Color.fromARGB(255, 215, 230, 245)
+                                : Colors.transparent,
+                            title: Padding(
+                              padding:
+                                  EdgeInsets.only(left: size.width * 0.035),
+                              child: Text(
+                                data['content'],
+                                style: TextStyle(fontSize: size.width * 0.045),
+                              ),
+                            ),
+                            subtitle: Padding(
+                              padding:
+                                  EdgeInsets.only(left: size.width * 0.035),
+                              child: Row(
+                                children: [
+                                  Text(timeAgo),
+                                ],
+                              ),
+                            ),
+                            onTap: () {
+                              showBottomSheet(
+                                  shape: const BeveledRectangleBorder(),
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return SizedBox(
+                                      width: size.width,
+                                      height: size.height * 0.4,
+                                      child: Padding(
+                                        padding:
+                                            EdgeInsets.all(size.width * 0.05),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              "Demande d'autorisation",
+                                              style: TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: size.width * 0.065),
+                                            ),
+                                            SizedBox(
+                                              height: size.height * 0.01,
+                                            ),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                              children: [
+                                                Text(data['user'],
+                                                    style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600)),
+                                                SizedBox(
+                                                  height: size.height * 0.03,
+                                                ),
+                                                SizedBox(
+                                                  width: size.width * 0.9,
+                                                  child: Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                          'Date:  "${data['date']}"',
+                                                          style: TextStyle(
+                                                              fontSize:
+                                                                  size.width *
+                                                                      0.05)),
+                                                      Text(
+                                                          'Heure de début:  "${data['startTime']}"',
+                                                          style: TextStyle(
+                                                              fontSize:
+                                                                  size.width *
+                                                                      0.05)),
+                                                      Text(
+                                                          'Heure de fin:  "${data['endTime']}"',
+                                                          style: TextStyle(
+                                                              fontSize:
+                                                                  size.width *
+                                                                      0.05)),
+                                                      Text(
+                                                          'Nombre d\'heures:  "${data['hours']}"',
+                                                          style: TextStyle(
+                                                              fontSize:
+                                                                  size.width *
+                                                                      0.05))
+                                                    ],
+                                                  ),
+                                                ),
+                                                SizedBox(
+                                                  height: size.height * 0.02,
+                                                ),
+                                                data['status'] == 'pending'
+                                                    ? Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .spaceEvenly,
+                                                        children: [
+                                                          ElevatedButton(
+                                                              style: const ButtonStyle(
+                                                                  shape: WidgetStatePropertyAll(
+                                                                      BeveledRectangleBorder()),
+                                                                  foregroundColor:
+                                                                      WidgetStatePropertyAll(
+                                                                          Colors
+                                                                              .white),
+                                                                  backgroundColor:
+                                                                      WidgetStatePropertyAll(Color.fromARGB(
+                                                                          255,
+                                                                          30,
+                                                                          60,
+                                                                          100))),
+                                                              onPressed:
+                                                                  () async {
+                                                                final DocumentSnapshot<
+                                                                        Map<String,
+                                                                            dynamic>>
+                                                                    snapshot =
+                                                                    await FirebaseFirestore
+                                                                        .instance
+                                                                        .collection(
+                                                                            'User')
+                                                                        .doc(data[
+                                                                            'userID'])
+                                                                        .get();
+                                                                final userdata =
+                                                                    snapshot
+                                                                        .data();
+
+                                                                int a;
+                                                                double b = userdata![
+                                                                        'Sanctions'] +
+                                                                    (data['hours'] /
+                                                                        8)as double;
+                                                                if (b - b.truncate() <
+                                                                    0.6) {
+                                                                  a = b
+                                                                      .truncate();
+                                                                } else {
+                                                                  a = b.ceil();
+                                                                }
+                                                                FirebaseFirestore
+                                                                    .instance
+                                                                    .collection(
+                                                                        'User')
+                                                                    .doc(data[
+                                                                        'userID'])
+                                                                    .update({
+                                                                  'Sanctions': userdata[
+                                                                          'Sanctions'] +
+                                                                      (data['hours'] /
+                                                                          8),
+                                                                  'Solde congé': userdata[
+                                                                          'Solde congé'] +
+                                                                      userdata[
+                                                                          'Solde congé année prec'] -
+                                                                      userdata[
+                                                                          'Congé pris'] -
+                                                                      a
+                                                                });
+                                                                FirebaseFirestore
+                                                                    .instance
+                                                                    .collection(
+                                                                        'Autorisation')
+                                                                    .doc(data[
+                                                                        'autId'])
+                                                                    .update({
+                                                                  'status':
+                                                                      'approved'
+                                                                });
+                                                                FirebaseFirestore
+                                                                    .instance
+                                                                    .collection(
+                                                                        'Notification')
+                                                                    .doc(data[
+                                                                        'id'])
+                                                                    .update({
+                                                                  'isRead':
+                                                                      true,
+                                                                  'validé':
+                                                                      true,
+                                                                  'status':
+                                                                      'Accepté'
+                                                                });
+                                                                String notId1 =
+                                                                    generateId();
+                                                                FirebaseFirestore
+                                                                    .instance
+                                                                    .collection(
+                                                                        'UserNotification')
+                                                                    .doc(notId1)
+                                                                    .set({
+                                                                  'id': notId1,
+                                                                  'userID': data[
+                                                                      'userID'],
+                                                                  'timestamp':
+                                                                      DateTime
+                                                                          .now(),
+                                                                  'date': today,
+                                                                  'content':
+                                                                      'Votre demande d\'autorisation a été acceptée.',
+                                                                  'isRead':
+                                                                      false,
+                                                                });
+                                                                Navigator.of(
+                                                                    // ignore: use_build_context_synchronously
+                                                                    context).pop();
+                                                              },
+                                                              child: Text(
+                                                                'Valider',
+                                                                style: TextStyle(
+                                                                    fontSize:
+                                                                        size.height *
+                                                                            0.02),
+                                                              )),
+                                                          ElevatedButton(
+                                                            style:
+                                                                const ButtonStyle(
+                                                              side: WidgetStatePropertyAll(BorderSide(
+                                                                  color: Color
+                                                                      .fromARGB(
+                                                                          255,
+                                                                          30,
+                                                                          60,
+                                                                          100))),
+                                                              shape: WidgetStatePropertyAll(
+                                                                  BeveledRectangleBorder()),
+                                                              foregroundColor:
+                                                                  WidgetStatePropertyAll(
+                                                                      Color.fromARGB(
+                                                                          255,
+                                                                          30,
+                                                                          60,
+                                                                          100)),
+                                                            ),
+                                                            onPressed: () {
+                                                              FirebaseFirestore
+                                                                  .instance
+                                                                  .collection(
+                                                                      'Autorisation')
+                                                                  .doc(data[
+                                                                      'autId'])
+                                                                  .delete();
+                                                              FirebaseFirestore
+                                                                  .instance
+                                                                  .collection(
+                                                                      'Notification')
+                                                                  .doc(data[
+                                                                      'id'])
+                                                                  .update({
+                                                                'isRead': true,
+                                                                'validé': true,
+                                                                'status':
+                                                                    'Refusé'
+                                                              });
+                                                              String notId2 =
+                                                                  generateId();
+                                                              FirebaseFirestore
+                                                                  .instance
+                                                                  .collection(
+                                                                      'UserNotification')
+                                                                  .doc(notId2)
+                                                                  .set({
+                                                                'id': notId2,
+                                                                'userID': data[
+                                                                    'userID'],
+                                                                'timestamp':
+                                                                    DateTime
+                                                                        .now(),
+                                                                'date': today,
+                                                                'content':
+                                                                    'Votre demande d\'autorisation a été refusée.',
+                                                                'isRead': false,
+                                                              });
+                                                              Navigator.of(
+                                                                  // ignore: use_build_context_synchronously
+                                                                  context).pop();
+                                                            },
+                                                            child: const Text(
+                                                                'Refuser'),
+                                                          )
+                                                        ],
+                                                      )
+                                                    : Text(
+                                                        data['status'],
+                                                        style: TextStyle(
+                                                            fontSize:
+                                                                size.width *
+                                                                    0.055),
+                                                      ),
+                                              ],
+                                            )
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  });
+                            },
+                          );
                       }
                       return const SizedBox.shrink();
                     });
