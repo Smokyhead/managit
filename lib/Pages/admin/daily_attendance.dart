@@ -55,10 +55,34 @@ class _DailyAttendanceState extends State<DailyAttendance> {
     });
   }
 
-  String _formatDuration(int minutes) {
-    int hours = minutes ~/ 60;
-    int remainingMinutes = minutes % 60;
-    return '${hours}H ${remainingMinutes}Min';
+  String _formatDuration(String? duration) {
+    if (duration == null || duration.isEmpty) return '0H 0Min';
+
+    final regex = RegExp(r'(\d+)H (\d+)m');
+    final match = regex.firstMatch(duration);
+
+    if (match != null) {
+      final hours = int.parse(match.group(1)!);
+      final minutes = int.parse(match.group(2)!);
+      return '${hours}H ${minutes}Min';
+    }
+
+    // Fallback if the format doesn't match
+    return 'Invalid Duration';
+  }
+
+  int _parseDuration(String duration) {
+    final regex = RegExp(r'(\d+)H (\d+)m');
+    final match = regex.firstMatch(duration);
+
+    if (match != null) {
+      final hours = int.parse(match.group(1)!);
+      final minutes = int.parse(match.group(2)!);
+      return hours * 60 + minutes;
+    }
+
+    // Fallback if the format doesn't match
+    return 0;
   }
 
   String calculateDuration(String startTime, String endTime) {
@@ -74,7 +98,7 @@ class _DailyAttendanceState extends State<DailyAttendance> {
     int minutes = difference.inMinutes.remainder(60);
 
     // Return the formatted duration as a string
-    return '${hours}h ${minutes}m';
+    return '${hours}H ${minutes}m';
   }
 
   @override
@@ -98,6 +122,7 @@ class _DailyAttendanceState extends State<DailyAttendance> {
                     onTap: () async {
                       final pickedDate = await showDatePicker(
                           context: context,
+                          initialDate: DateTime.now(),
                           firstDate: DateTime(2024),
                           lastDate: DateTime(2100));
                       if (pickedDate != null) {
@@ -133,7 +158,7 @@ class _DailyAttendanceState extends State<DailyAttendance> {
                 }
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Text('...');
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 final data = snapshot.data!;
@@ -142,32 +167,34 @@ class _DailyAttendanceState extends State<DailyAttendance> {
                   scrollDirection: Axis.horizontal,
                   child: DataTable(
                     columns: const [
-                      DataColumn(label: Text('Nom & Prenom')),
+                      DataColumn(label: Text('Nom & Prénom')),
                       DataColumn(label: Text('Environnement')),
                       DataColumn(label: Text('Absence')),
                       DataColumn(label: Text('Retard')),
-                      DataColumn(label: Text('Entrée')),
-                      DataColumn(label: Text('Sortie')),
+                      DataColumn(label: Text('Entrée Matin')),
+                      DataColumn(label: Text('Sortie Matin')),
                       DataColumn(label: Text('Shift Matin')),
-                      DataColumn(label: Text('Entrée')),
-                      DataColumn(label: Text('Sortie')),
+                      DataColumn(label: Text('Entrée AM')),
+                      DataColumn(label: Text('Sortie AM')),
                       DataColumn(label: Text('Shift Midi')),
                       DataColumn(label: Text('Prod')),
                     ],
                     rows: data.map((item) {
                       return DataRow(cells: [
                         DataCell(Text('${item['Nom']} ${item['Prénom']}')),
-                        DataCell(Text(item['Environnement'] ?? 'Onsite')),
-                        DataCell(Text(item['absence'] ?? 'Oui')),
+                        DataCell(Text(item['environnement'] ?? 'Onsite')),
+                        DataCell(Text(item['absence'] ?? 'Non')),
                         DataCell(Text(item['retard'] ?? '')),
                         DataCell(Text(item['entréMatin'] ?? '')),
                         DataCell(Text(item['sortieMatin'] ?? '')),
-                        DataCell(
-                            Text(_formatDuration(item['shiftMatin'] ?? 0))),
+                        DataCell(Text(
+                            _formatDuration(item['shiftMatin'] ?? '0H 0m'))),
                         DataCell(Text(item['entréAM'] ?? '')),
                         DataCell(Text(item['sortieAM'] ?? '')),
-                        DataCell(Text(_formatDuration(item['shiftMidi'] ?? 0))),
-                        DataCell(Text(_formatDuration(item['prod'] ?? 0))),
+                        DataCell(Text(
+                            _formatDuration(item['shiftMidi'] ?? '0H 0m'))),
+                        DataCell(
+                            Text(_formatDuration(item['prod'] ?? '0H 0m'))),
                       ]);
                     }).toList(),
                   ),
@@ -180,9 +207,3 @@ class _DailyAttendanceState extends State<DailyAttendance> {
     );
   }
 }
-
-
-// projet :: title, desc, image, user(list)
-
-// ajut d utilisateur: telephone, projet, nombre de mois effectués (date d'embauche)
-// absence : plus qu'un jour liste des absences de tous les utilisateurs (pénalités)

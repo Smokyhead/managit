@@ -5,7 +5,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:mailer/mailer.dart';
-import 'package:mailer/smtp_server/gmail.dart';
+import 'package:mailer/smtp_server/hotmail.dart';
 
 class AddUser extends StatefulWidget {
   const AddUser({super.key});
@@ -19,14 +19,20 @@ class AddUserState extends State<AddUser> {
   final TextEditingController _nom = TextEditingController();
   final TextEditingController _prenom = TextEditingController();
   final TextEditingController _email = TextEditingController();
+  final TextEditingController _phone = TextEditingController();
 
-  final smtpServer = gmail("saidane.sirine2001@gmail.com", "itsnotsafe");
+  bool isEightDigits(String input) {
+    final RegExp regExp = RegExp(r'^\d{8}$');
+    return regExp.hasMatch(input);
+  }
+
+  final smtpServer = hotmail("swconsulting01@hotmail.com", "Swconsulting2024");
   // final smtpServer = gmail(dotenv.env['EMAIL']!, dotenv.env['PASSWORD']!);
 
   sendMail() async {
     final message = Message()
       ..from = const Address("saidane.sirine2001@gmail.com", 'Confirmation bot')
-      ..recipients.add('mopigo7718@stikezz.com')
+      ..recipients.add('lefewob854@mfunza.com')
       ..subject = 'Test Dart Mailer library'
       ..text = 'This is the plain text.\nThis is line 2 of the text part.';
 
@@ -140,6 +146,23 @@ class AddUserState extends State<AddUser> {
                       }
                       if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
                         return 'Veuillez entrer une adresse e-mail valide';
+                      }
+                      return null;
+                    },
+                  ),
+                  SizedBox(height: size.height * 0.04),
+                  TextFormField(
+                    textCapitalization: TextCapitalization.words,
+                    decoration: InputDecoration(
+                        hintText: 'Téléphone',
+                        hintStyle: TextStyle(fontSize: size.width * 0.05)),
+                    controller: _phone,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return "Veuillez entrer le numéro de téléphone";
+                      }
+                      if (!isEightDigits(_phone.text)) {
+                        return 'Veuillez entrer un numéro valide';
                       }
                       return null;
                     },

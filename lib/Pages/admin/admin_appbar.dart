@@ -12,6 +12,7 @@ import 'package:managit/pages/admin/global_permission_overview.dart';
 import 'package:managit/pages/admin/month_sythesis.dart';
 import 'package:managit/pages/admin/notifications.dart';
 import 'package:managit/pages/admin/penalty_management.dart';
+import 'package:managit/pages/admin/projects.dart';
 import 'package:managit/pages/admin/settings.dart';
 import 'package:managit/pages/admin/tardiness_management.dart';
 import 'package:managit/pages/admin/user_management.dart';
@@ -64,6 +65,7 @@ class AdminAppBarState extends State<AdminAppBar> {
     const AbsenceManagement(),
     const TardinessManagement(),
     const PenaltyManagement(),
+    const Projects(),
     const AdminSettings()
   ];
 
@@ -77,6 +79,7 @@ class AdminAppBarState extends State<AdminAppBar> {
     'Gestion des absences',
     'Gestion des retards',
     'Gestion des pénalités',
+    'Gestion des projets',
     'Paramêtres'
   ];
 
@@ -89,6 +92,58 @@ class AdminAppBarState extends State<AdminAppBar> {
 
   @override
   Widget build(BuildContext context) {
+    StreamBuilder(
+        stream: FirebaseFirestore.instance
+            .collection('User')
+            .where('role', isEqualTo: 'employee')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
+              child: Platform.isAndroid
+                  ? const CircularProgressIndicator(
+                      color: Color.fromARGB(255, 30, 60, 100),
+                    )
+                  : const CupertinoActivityIndicator(),
+            );
+          }
+          final user = snapshot.data?.docs.first;
+          final userd = user!.data();
+          int rest = userd['resteConge'];
+          int sanc = 0;
+          if (userd['Sanctions'] - userd['Sanctions'].truncate() < 0.6) {
+            sanc = userd['Sanctions'].truncate();
+          } else {
+            sanc = userd['Sanctions'].ceil();
+          }
+          if (DateTime.now().month == (user['NbMois'] + 1)) {
+            FirebaseFirestore.instance
+                .collection('User')
+                .doc(userd['id'])
+                .update({
+              'NbMois': userd['NbMois'] + 1,
+              'Solde congé': ((userd['NbMois'] + 1) * 1.75).truncate(),
+              'resteConge': userd['Solde congé'] +
+                  userd['Solde congé année prec'] -
+                  sanc -
+                  userd['Congé pris']
+            });
+          }
+          if (userd['NbMois'] == 12 && DateTime.now().month == 1) {
+            userd['year'] = userd['year'] + 1;
+            FirebaseFirestore.instance
+                .collection('User')
+                .doc(userd['id'])
+                .update({
+              'NbMois': 1,
+              'Solde congé': 1.75.truncate(),
+              'resteConge': 1,
+              'Solde congé année prec': rest,
+              'Sanctions': 0
+            });
+          }
+          return const SizedBox.shrink();
+        });
     Size size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
@@ -236,6 +291,14 @@ class AdminAppBarState extends State<AdminAppBar> {
                               _selectedPageIndex == 8 ? null : Colors.white)),
                   tileColor: _selectedPageIndex == 8 ? Colors.grey[300] : null,
                   onTap: () => _selectPage(8),
+                ),
+                ListTile(
+                  title: Text('Gestion des projets',
+                      style: TextStyle(
+                          color:
+                              _selectedPageIndex == 9 ? null : Colors.white)),
+                  tileColor: _selectedPageIndex == 9 ? Colors.grey[300] : null,
+                  onTap: () => _selectPage(9),
                 )
               ],
             ),
@@ -245,20 +308,19 @@ class AdminAppBarState extends State<AdminAppBar> {
                   title: Text('Paramêtres',
                       style: TextStyle(
                           color:
-                              _selectedPageIndex == 9 ? null : Colors.white)),
-                  tileColor: _selectedPageIndex == 9 ? Colors.grey[300] : null,
+                              _selectedPageIndex == 10 ? null : Colors.white)),
+                  tileColor: _selectedPageIndex == 10 ? Colors.grey[300] : null,
                   trailing: const Icon(
                     Icons.settings,
                     color: Colors.white,
                   ),
-                  onTap: () => _selectPage(9),
+                  onTap: () => _selectPage(10),
                 ),
                 ListTile(
-                  title: Text('Déconnexion',
-                      style: TextStyle(
-                          color:
-                              _selectedPageIndex == 9 ? null : Colors.white)),
-                  tileColor: _selectedPageIndex == 9 ? Colors.grey[300] : null,
+                  title: const Text(
+                    'Déconnexion',
+                    style: TextStyle(color: Colors.white),
+                  ),
                   trailing: const Icon(
                     Icons.logout,
                     color: Colors.white,

@@ -6,7 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:managit/models/user_model.dart';
 import 'package:managit/pages/connection/connection.dart';
 import 'package:managit/pages/employee/leave_request.dart';
 import 'package:managit/pages/employee/notifications_user.dart';
@@ -25,14 +24,7 @@ class _HomeState extends State<Home> {
   final String today = DateFormat('dd/MM/yyyy').format(DateTime.now());
   String time = DateFormat('HH:mm').format(DateTime.now());
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  UserData? _userData;
   var sent = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchUserData();
-  }
 
   String generateId() {
     final random = Random();
@@ -42,29 +34,6 @@ class _HomeState extends State<Home> {
 
     return String.fromCharCodes(Iterable.generate(
         length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
-  }
-
-  Future<UserData> getCurrentUserData() async {
-    final DocumentSnapshot<Map<String, dynamic>> snapshot =
-        await FirebaseFirestore.instance
-            .collection('User')
-            .doc(_user!.uid)
-            .get();
-
-    if (!snapshot.exists) {
-      throw Exception('User data not found in Firestore.');
-    }
-
-    final UserData userData = UserData();
-    userData.fromMap(snapshot.data() as Map<String, dynamic>);
-    return userData;
-  }
-
-  Future<void> _fetchUserData() async {
-    final userData = await getCurrentUserData();
-    setState(() {
-      _userData = userData;
-    });
   }
 
   Future<void> signOut() async {
@@ -123,347 +92,159 @@ class _HomeState extends State<Home> {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-    return FutureBuilder<UserData>(
-      future: getCurrentUserData(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            body: Center(
+    return StreamBuilder(
+        stream: FirebaseFirestore.instance
+            .collection('User')
+            .where('id', isEqualTo: _user!.uid)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(
               child: Platform.isAndroid
                   ? const CircularProgressIndicator(
                       color: Color.fromARGB(255, 30, 60, 100),
                     )
                   : const CupertinoActivityIndicator(),
-            ),
-          );
-        }
-        _userData = snapshot.data!;
+            );
+          }
+          final user = snapshot.data?.docs.first;
+          final userd = user!.data();
+          int rest = userd['resteConge'];
+          int sanc = 0;
+          if (userd['Sanctions'] - userd['Sanctions'].truncate() < 0.6) {
+            sanc = userd['Sanctions'].truncate();
+          } else {
+            sanc = userd['Sanctions'].ceil();
+          }
+          if (DateTime.now().month == (user['NbMois'] + 1)) {
+            FirebaseFirestore.instance
+                .collection('User')
+                .doc(_user.uid)
+                .update({
+              'NbMois': userd['NbMois'] + 1,
+              'Solde congé': ((userd['NbMois'] + 1) * 1.75).truncate(),
+              'resteConge': userd['Solde congé'] +
+                  userd['Solde congé année prec'] -
+                  sanc -
+                  userd['Congé pris']
+            });
+          }
+          if (userd['NbMois'] == 12 && DateTime.now().month == 1) {
+            userd['year'] = userd['year'] + 1;
+            FirebaseFirestore.instance
+                .collection('User')
+                .doc(_user.uid)
+                .update({
+              'NbMois': 1,
+              'Solde congé': 1.75.truncate(),
+              'resteConge': 1,
+              'Solde congé année prec': rest,
+              'Sanctions': 0
+            });
+          }
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Accueil'),
+              centerTitle: true,
+              leading: IconButton(
+                  icon: const Icon(Icons.logout),
+                  onPressed: () {
+                    signOut();
+                  }),
+              backgroundColor: const Color.fromARGB(255, 30, 60, 100),
+              foregroundColor: Colors.white,
+              actions: [
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('UserNotification')
+                      .where('isRead', isEqualTo: false)
+                      .snapshots(),
+                  builder: (context, snapshots) {
+                    if (!snapshots.hasData || snapshots.data!.docs.isEmpty) {
+                      return IconButton(
+                        onPressed: () {
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (context) {
+                            return const NotificationsUser();
+                          }));
+                        },
+                        icon: const Icon(Icons.notifications),
+                      );
+                    }
 
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text('Accueil'),
-            centerTitle: true,
-            leading: IconButton(
-                icon: const Icon(Icons.logout),
-                onPressed: () {
-                  signOut();
-                }),
-            backgroundColor: const Color.fromARGB(255, 30, 60, 100),
-            foregroundColor: Colors.white,
-            actions: [
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('UserNotification')
-                    .where('isRead', isEqualTo: false)
-                    .snapshots(),
-                builder: (context, snapshots) {
-                  if (!snapshots.hasData || snapshots.data!.docs.isEmpty) {
-                    return IconButton(
-                      onPressed: () {
-                        Navigator.push(context,
-                            MaterialPageRoute(builder: (context) {
-                          return const NotificationsUser();
-                        }));
-                      },
-                      icon: const Icon(Icons.notifications),
+                    int unreadCount = snapshots.data!.docs.length;
+
+                    return badges.Badge(
+                      position: badges.BadgePosition.custom(end: 5),
+                      badgeContent: Text(
+                        unreadCount.toString(),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      child: IconButton(
+                        onPressed: () {
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (context) {
+                            return const NotificationsUser();
+                          }));
+                        },
+                        icon: const Icon(Icons.notifications),
+                      ),
                     );
-                  }
-
-                  int unreadCount = snapshots.data!.docs.length;
-
-                  return badges.Badge(
-                    position: badges.BadgePosition.custom(end: 5),
-                    badgeContent: Text(
-                      unreadCount.toString(),
-                      style: const TextStyle(color: Colors.white),
-                    ),
-                    child: IconButton(
-                      onPressed: () {
-                        Navigator.push(context,
-                            MaterialPageRoute(builder: (context) {
-                          return const NotificationsUser();
-                        }));
-                      },
-                      icon: const Icon(Icons.notifications),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-          body: SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.all(size.width * 0.05),
-              child: Column(
-                children: [
-                  Padding(
-                    padding:
-                        EdgeInsets.symmetric(vertical: size.height * 0.015),
-                    child: Center(
-                      child: Text(
-                        DateFormat('dd - MM - yyyy').format(DateTime.now()),
-                        style: TextStyle(
-                            fontWeight: FontWeight.w400,
-                            fontSize: size.width * 0.05),
+                  },
+                ),
+              ],
+            ),
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.all(size.width * 0.05),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding:
+                          EdgeInsets.symmetric(vertical: size.height * 0.015),
+                      child: Center(
+                        child: Text(
+                          DateFormat('dd - MM - yyyy').format(DateTime.now()),
+                          style: TextStyle(
+                              fontWeight: FontWeight.w400,
+                              fontSize: size.width * 0.05),
+                        ),
                       ),
                     ),
-                  ),
-                  StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('Attendance')
-                          .where('userID', isEqualTo: _user!.uid)
-                          .where('date', isEqualTo: today)
-                          .snapshots(),
-                      builder: (context, snapshots) {
-                        late int day;
-                        late String message;
-                        day = DateTime.now().weekday;
-                        if (day == 1 ||
-                            day == 2 ||
-                            day == 3 ||
-                            day == 4 ||
-                            day == 7) {
-                          message = 'A demain.';
-                        } else {
-                          message = "Bon weekend.";
-                        }
-                        if (snapshots.connectionState ==
-                            ConnectionState.waiting) {
-                          return Center(
-                            child: Platform.isAndroid
-                                ? const CircularProgressIndicator(
-                                    color: Color.fromARGB(255, 30, 60, 100),
-                                  )
-                                : const CupertinoActivityIndicator(),
-                          );
-                        }
-                        final docs = snapshots.data?.docs;
-                        if (docs == null || docs.isEmpty) {
-                          return Column(
-                            children: [
-                              Text('Arrivé Matin',
-                                  style: TextStyle(
-                                      fontSize: size.width * 0.05,
-                                      fontWeight: FontWeight.bold)),
-                              SizedBox(
-                                height: size.height * 0.02,
-                              ),
-                              Center(
-                                  child: SizedBox(
-                                width: size.width * 0.25,
-                                height: size.width * 0.3,
-                                child: IconButton(
-                                    style: ButtonStyle(
-                                        fixedSize:
-                                            WidgetStatePropertyAll(size * 0.1),
-                                        foregroundColor:
-                                            const WidgetStatePropertyAll(
-                                                Colors.white),
-                                        backgroundColor:
-                                            const WidgetStatePropertyAll(
-                                                Color.fromARGB(
-                                                    255, 30, 60, 100))),
-                                    onPressed: () {
-                                      setState(() {
-                                        // time = DateFormat('HH:mm')
-                                        //     .format(DateTime.now());
-                                        time = '09:02';
-                                      });
-                                      final String notificationId =
-                                          generateId();
-                                      final String attendanceId = generateId();
-                                      FirebaseFirestore.instance
-                                          .collection('Attendance')
-                                          .doc(attendanceId)
-                                          .set({
-                                        'id': attendanceId,
-                                        'userID': _user.uid,
-                                        'date': today,
-                                        'entréMatin': time,
-                                        'entréAM': '',
-                                        'sortieMatin': '',
-                                        'sortieAM': '',
-                                        'shiftMatin': '',
-                                        'shiftAM': '',
-                                        'sent': true,
-                                        'absence': 'non',
-                                        'environnement': 'Onsite',
-                                        'prod': '',
-                                        'retard': ''
-                                      });
-                                      FirebaseFirestore.instance
-                                          .collection('Notification')
-                                          .doc(notificationId)
-                                          .set({
-                                        'id': notificationId,
-                                        'attendanceId': attendanceId,
-                                        'userID': _user.uid,
-                                        'timestamp': DateTime.now(),
-                                        'date': today,
-                                        'time': time,
-                                        'type': 'entréMatin',
-                                        'content':
-                                            '${_userData!.nom} ${_userData!.prenom} à pointé son entrée matin à $time',
-                                        'isRead': false,
-                                        'validé': false,
-                                        'typeNot': 'pointage'
-                                      });
-                                    },
-                                    icon:
-                                        Image.asset('assets/fingerprint.png')),
-                              )),
-                            ],
-                          );
-                        } else {
-                          var data = snapshots.data?.docs.first;
-                          if (data!['sortieMatin'] == '') {
-                            return data['sent'] == false
-                                ? Column(
-                                    children: [
-                                      Text('Sortie de pause',
-                                          style: TextStyle(
-                                              fontSize: size.width * 0.05,
-                                              fontWeight: FontWeight.bold)),
-                                      SizedBox(
-                                        height: size.height * 0.02,
-                                      ),
-                                      Center(
-                                        child: SizedBox(
-                                          width: size.width * 0.25,
-                                          height: size.width * 0.3,
-                                          child: IconButton(
-                                              style: const ButtonStyle(
-                                                  foregroundColor:
-                                                      WidgetStatePropertyAll(
-                                                          Colors.white),
-                                                  backgroundColor:
-                                                      WidgetStatePropertyAll(
-                                                          Color.fromARGB(255,
-                                                              30, 60, 100))),
-                                              onPressed: () {
-                                                setState(() {
-                                                  // time = DateFormat('HH:mm')
-                                                  //     .format(DateTime.now());
-                                                  time = '13:00';
-                                                });
-                                                final String id = generateId();
-                                                String shift =
-                                                    calculateDuration(
-                                                        data['entréMatin'],
-                                                        time);
-                                                FirebaseFirestore.instance
-                                                    .collection('Attendance')
-                                                    .doc(data['id'])
-                                                    .update({
-                                                  'shiftMatin': shift,
-                                                  'sortieMatin': time,
-                                                  'sent': true,
-                                                  'tardinessMatin':
-                                                      _calculateTardiness(
-                                                          data['entréMatin'],
-                                                          time,
-                                                          'Matin')
-                                                });
-                                                FirebaseFirestore.instance
-                                                    .collection('Notification')
-                                                    .doc(id)
-                                                    .set({
-                                                  'id': id,
-                                                  'userID': _user.uid,
-                                                  'attendanceId': data['id'],
-                                                  'timestamp': DateTime.now(),
-                                                  'date': today,
-                                                  'time': time,
-                                                  'type': 'sortieMatin',
-                                                  'content':
-                                                      '${_userData!.nom} ${_userData!.prenom} à pointé son sortie de pause à $time',
-                                                  'isRead': false,
-                                                  'validé': false,
-                                                  'typeNot': 'pointage'
-                                                });
-                                              },
-                                              icon: Image.asset(
-                                                  'assets/fingerprint.png')),
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : Text(
-                                    'Validation...',
-                                    style:
-                                        TextStyle(fontSize: size.width * 0.05),
-                                  );
-                          } else if (data['entréAM'] == '') {
-                            return data['sent'] == false
-                                ? Column(
-                                    children: [
-                                      Text('Retour',
-                                          style: TextStyle(
-                                              fontSize: size.width * 0.05,
-                                              fontWeight: FontWeight.bold)),
-                                      SizedBox(
-                                        height: size.height * 0.02,
-                                      ),
-                                      Center(
-                                        child: SizedBox(
-                                          width: size.width * 0.25,
-                                          height: size.width * 0.3,
-                                          child: IconButton(
-                                              style: const ButtonStyle(
-                                                  foregroundColor:
-                                                      WidgetStatePropertyAll(
-                                                          Colors.white),
-                                                  backgroundColor:
-                                                      WidgetStatePropertyAll(
-                                                          Color.fromARGB(255,
-                                                              30, 60, 100))),
-                                              onPressed: () {
-                                                setState(() {
-                                                  // time = DateFormat('HH:mm')
-                                                  //     .format(DateTime.now());
-                                                  time = '14:05';
-                                                });
-                                                final String id = generateId();
-                                                FirebaseFirestore.instance
-                                                    .collection('Attendance')
-                                                    .doc(data['id'])
-                                                    .update({
-                                                  'entréAM': time,
-                                                  'sent': true
-                                                });
-                                                FirebaseFirestore.instance
-                                                    .collection('Notification')
-                                                    .doc(id)
-                                                    .set({
-                                                  'id': id,
-                                                  'userID': _user.uid,
-                                                  'attendanceId': data['id'],
-                                                  'timestamp': DateTime.now(),
-                                                  'date': today,
-                                                  'time': time,
-                                                  'type': 'entréAM',
-                                                  'content':
-                                                      '${_userData!.nom} ${_userData!.prenom} à pointé son entrée après la pause à $time',
-                                                  'isRead': false,
-                                                  'validé': false,
-                                                  'typeNot': 'pointage'
-                                                });
-                                              },
-                                              icon: Image.asset(
-                                                  'assets/fingerprint.png')),
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : Text(
-                                    'Validation...',
-                                    style:
-                                        TextStyle(fontSize: size.width * 0.05),
-                                  );
-                          } else if (data['sortieAM'] == '') {
+                    StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('Attendance')
+                            .where('userID', isEqualTo: _user.uid)
+                            .where('date', isEqualTo: today)
+                            .snapshots(),
+                        builder: (context, snapshots) {
+                          late int day;
+                          late String message;
+                          day = DateTime.now().weekday;
+                          if (day == 1 ||
+                              day == 2 ||
+                              day == 3 ||
+                              day == 4 ||
+                              day == 7) {
+                            message = 'A demain.';
+                          } else {
+                            message = "Bon weekend.";
+                          }
+                          if (snapshots.connectionState ==
+                              ConnectionState.waiting) {
+                            return Center(
+                              child: Platform.isAndroid
+                                  ? const CircularProgressIndicator(
+                                      color: Color.fromARGB(255, 30, 60, 100),
+                                    )
+                                  : const CupertinoActivityIndicator(),
+                            );
+                          }
+                          final docs = snapshots.data?.docs;
+                          if (docs == null || docs.isEmpty) {
                             return Column(
                               children: [
-                                Text('Sortie',
+                                Text('Arrivé Matin',
                                     style: TextStyle(
                                         fontSize: size.width * 0.05,
                                         fontWeight: FontWeight.bold)),
@@ -471,356 +252,590 @@ class _HomeState extends State<Home> {
                                   height: size.height * 0.02,
                                 ),
                                 Center(
-                                  child: SizedBox(
-                                    width: size.width * 0.25,
-                                    height: size.width * 0.3,
-                                    child: IconButton(
-                                        style: const ButtonStyle(
-                                            foregroundColor:
-                                                WidgetStatePropertyAll(
-                                                    Colors.white),
-                                            backgroundColor:
-                                                WidgetStatePropertyAll(
-                                                    Color.fromARGB(
-                                                        255, 30, 60, 100))),
-                                        onPressed: () {
-                                          setState(() {
-                                            // time = DateFormat('HH:mm')
-                                            //     .format(DateTime.now());
-                                            time = '18:10';
-                                          });
-                                          final String id = generateId();
-                                          String shift = calculateDuration(
-                                              data['entréAM'], time);
-                                          String prod = sumDurations(
-                                              data['shiftMatin'], shift);
-                                          String retard =
-                                              calculateDailyTardiness(prod);
-                                          FirebaseFirestore.instance
-                                              .collection('Attendance')
-                                              .doc(data['id'])
-                                              .update({
-                                            'retard': retard,
-                                            'prod': prod,
-                                            'shiftAM': shift,
-                                            'sortieAM': time,
-                                            'sent': true,
-                                            'tardinessAM': _calculateTardiness(
-                                                data['entréAM'], time, 'AM')
-                                          });
-                                          FirebaseFirestore.instance
-                                              .collection('Notification')
-                                              .doc(id)
-                                              .set({
-                                            'id': id,
-                                            'userID': _user.uid,
-                                            'attendanceId': data['id'],
-                                            'timestamp': DateTime.now(),
-                                            'date': today,
-                                            'time': time,
-                                            'type': 'sortieAM',
-                                            'content':
-                                                '${_userData!.nom} ${_userData!.prenom} à pointé son sortie à $time',
-                                            'isRead': false,
-                                            'validé': false,
-                                            'typeNot': 'pointage'
-                                          });
-                                        },
-                                        icon: Image.asset(
-                                            'assets/fingerprint.png')),
-                                  ),
-                                ),
+                                    child: SizedBox(
+                                  width: size.width * 0.25,
+                                  height: size.width * 0.3,
+                                  child: IconButton(
+                                      style: ButtonStyle(
+                                          fixedSize: WidgetStatePropertyAll(
+                                              size * 0.1),
+                                          foregroundColor:
+                                              const WidgetStatePropertyAll(
+                                                  Colors.white),
+                                          backgroundColor:
+                                              const WidgetStatePropertyAll(
+                                                  Color.fromARGB(
+                                                      255, 30, 60, 100))),
+                                      onPressed: () {
+                                        setState(() {
+                                          // time = DateFormat('HH:mm')
+                                          //     .format(DateTime.now());
+                                          time = '09:02';
+                                        });
+                                        final String notificationId =
+                                            generateId();
+                                        final String attendanceId =
+                                            generateId();
+                                        FirebaseFirestore.instance
+                                            .collection('Attendance')
+                                            .doc(attendanceId)
+                                            .set({
+                                          'id': attendanceId,
+                                          'userID': _user.uid,
+                                          'date': today,
+                                          'entréMatin': time,
+                                          'entréAM': '',
+                                          'sortieMatin': '',
+                                          'sortieAM': '',
+                                          'shiftMatin': '',
+                                          'shiftAM': '',
+                                          'sent': true,
+                                          'absence': 'non',
+                                          'environnement': 'Onsite',
+                                          'prod': '',
+                                          'retard': ''
+                                        });
+                                        FirebaseFirestore.instance
+                                            .collection('Notification')
+                                            .doc(notificationId)
+                                            .set({
+                                          'id': notificationId,
+                                          'attendanceId': attendanceId,
+                                          'userID': _user.uid,
+                                          'timestamp': DateTime.now(),
+                                          'date': today,
+                                          'time': time,
+                                          'type': 'entréMatin',
+                                          'content':
+                                              '${userd['Nom']} ${userd['Prénom']} à pointé son entrée matin à $time',
+                                          'isRead': false,
+                                          'validé': false,
+                                          'typeNot': 'pointage'
+                                        });
+                                      },
+                                      icon: Image.asset(
+                                          'assets/fingerprint.png')),
+                                )),
                               ],
                             );
+                          } else {
+                            var data = snapshots.data?.docs.first;
+                            if (data!['entréMatin'] != '' &&
+                                data['sent'] == true) {
+                              return Text(
+                                'Validation...',
+                                style: TextStyle(fontSize: size.width * 0.05),
+                              );
+                            }
+                            if (data['sortieMatin'] == '') {
+                              return Column(
+                                children: [
+                                  Text('Sortie de pause',
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.05,
+                                          fontWeight: FontWeight.bold)),
+                                  SizedBox(
+                                    height: size.height * 0.02,
+                                  ),
+                                  Center(
+                                    child: SizedBox(
+                                      width: size.width * 0.25,
+                                      height: size.width * 0.3,
+                                      child: IconButton(
+                                          style: const ButtonStyle(
+                                              foregroundColor:
+                                                  WidgetStatePropertyAll(
+                                                      Colors.white),
+                                              backgroundColor:
+                                                  WidgetStatePropertyAll(
+                                                      Color.fromARGB(
+                                                          255, 30, 60, 100))),
+                                          onPressed: () {
+                                            setState(() {
+                                              // time = DateFormat('HH:mm')
+                                              //     .format(DateTime.now());
+                                              time = '13:00';
+                                            });
+                                            final String id = generateId();
+                                            String shift = calculateDuration(
+                                                data['entréMatin'], time);
+                                            FirebaseFirestore.instance
+                                                .collection('Attendance')
+                                                .doc(data['id'])
+                                                .update({
+                                              'shiftMatin': shift,
+                                              'sortieMatin': time,
+                                              'sent': true,
+                                              'tardinessMatin':
+                                                  _calculateTardiness(
+                                                      data['entréMatin'],
+                                                      time,
+                                                      'Matin')
+                                            });
+                                            FirebaseFirestore.instance
+                                                .collection('Notification')
+                                                .doc(id)
+                                                .set({
+                                              'id': id,
+                                              'userID': _user.uid,
+                                              'attendanceId': data['id'],
+                                              'timestamp': DateTime.now(),
+                                              'date': today,
+                                              'time': time,
+                                              'type': 'sortieMatin',
+                                              'content':
+                                                  '${userd['Nom']} ${userd['Prénom']} à pointé son sortie de pause à $time',
+                                              'isRead': false,
+                                              'validé': false,
+                                              'typeNot': 'pointage'
+                                            });
+                                          },
+                                          icon: Image.asset(
+                                              'assets/fingerprint.png')),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+                            if (data['sortieMatin'] != '' &&
+                                data['sent'] == true) {
+                              return Text(
+                                'Validation...',
+                                style: TextStyle(fontSize: size.width * 0.05),
+                              );
+                            }
+                            if (data['entréAM'] == '') {
+                              return Column(
+                                children: [
+                                  Text('Retour',
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.05,
+                                          fontWeight: FontWeight.bold)),
+                                  SizedBox(
+                                    height: size.height * 0.02,
+                                  ),
+                                  Center(
+                                    child: SizedBox(
+                                      width: size.width * 0.25,
+                                      height: size.width * 0.3,
+                                      child: IconButton(
+                                          style: const ButtonStyle(
+                                              foregroundColor:
+                                                  WidgetStatePropertyAll(
+                                                      Colors.white),
+                                              backgroundColor:
+                                                  WidgetStatePropertyAll(
+                                                      Color.fromARGB(
+                                                          255, 30, 60, 100))),
+                                          onPressed: () {
+                                            setState(() {
+                                              // time = DateFormat('HH:mm')
+                                              //     .format(DateTime.now());
+                                              time = '14:05';
+                                            });
+                                            final String id = generateId();
+                                            FirebaseFirestore.instance
+                                                .collection('Attendance')
+                                                .doc(data['id'])
+                                                .update({
+                                              'entréAM': time,
+                                              'sent': true
+                                            });
+                                            FirebaseFirestore.instance
+                                                .collection('Notification')
+                                                .doc(id)
+                                                .set({
+                                              'id': id,
+                                              'userID': _user.uid,
+                                              'attendanceId': data['id'],
+                                              'timestamp': DateTime.now(),
+                                              'date': today,
+                                              'time': time,
+                                              'type': 'entréAM',
+                                              'content':
+                                                  '${userd['Nom']} ${userd['Prénom']} à pointé son entrée après la pause à $time',
+                                              'isRead': false,
+                                              'validé': false,
+                                              'typeNot': 'pointage'
+                                            });
+                                          },
+                                          icon: Image.asset(
+                                              'assets/fingerprint.png')),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+                            if (data['entréAM'] != '' && data['sent'] == true) {
+                              return Text(
+                                'Validation...',
+                                style: TextStyle(fontSize: size.width * 0.05),
+                              );
+                            }
+                            if (data['sortieAM'] == '') {
+                              return Column(
+                                children: [
+                                  Text('Sortie',
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.05,
+                                          fontWeight: FontWeight.bold)),
+                                  SizedBox(
+                                    height: size.height * 0.02,
+                                  ),
+                                  Center(
+                                    child: SizedBox(
+                                      width: size.width * 0.25,
+                                      height: size.width * 0.3,
+                                      child: IconButton(
+                                          style: const ButtonStyle(
+                                              foregroundColor:
+                                                  WidgetStatePropertyAll(
+                                                      Colors.white),
+                                              backgroundColor:
+                                                  WidgetStatePropertyAll(
+                                                      Color.fromARGB(
+                                                          255, 30, 60, 100))),
+                                          onPressed: () {
+                                            setState(() {
+                                              // time = DateFormat('HH:mm')
+                                              //     .format(DateTime.now());
+                                              time = '18:10';
+                                            });
+                                            final String id = generateId();
+                                            String shift = calculateDuration(
+                                                data['entréAM'], time);
+                                            String prod = sumDurations(
+                                                data['shiftMatin'], shift);
+                                            String retard =
+                                                calculateDailyTardiness(prod);
+                                            FirebaseFirestore.instance
+                                                .collection('Attendance')
+                                                .doc(data['id'])
+                                                .update({
+                                              'retard': retard,
+                                              'prod': prod,
+                                              'shiftAM': shift,
+                                              'sortieAM': time,
+                                              'sent': true,
+                                              'tardinessAM':
+                                                  _calculateTardiness(
+                                                      data['entréAM'],
+                                                      time,
+                                                      'AM')
+                                            });
+                                            FirebaseFirestore.instance
+                                                .collection('Notification')
+                                                .doc(id)
+                                                .set({
+                                              'id': id,
+                                              'userID': _user.uid,
+                                              'attendanceId': data['id'],
+                                              'timestamp': DateTime.now(),
+                                              'date': today,
+                                              'time': time,
+                                              'type': 'sortieAM',
+                                              'content':
+                                                  '${userd['Nom']} ${userd['Prénom']} à pointé son sortie à $time',
+                                              'isRead': false,
+                                              'validé': false,
+                                              'typeNot': 'pointage'
+                                            });
+                                          },
+                                          icon: Image.asset(
+                                              'assets/fingerprint.png')),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+                            if (data['sortieAM'] != '' &&
+                                data['sent'] == true) {
+                              return Text(
+                                'Validation...',
+                                style: TextStyle(fontSize: size.width * 0.05),
+                              );
+                            }
                           }
-                          if (data['sortieAM'] != '' && data['sent'] == true) {
-                            return Text(
-                              'Validation...',
-                              style: TextStyle(fontSize: size.width * 0.05),
+                          return Text(
+                            message,
+                            style: TextStyle(fontSize: size.width * 0.05),
+                          );
+                        }),
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Divider(),
+                    ),
+                    SizedBox(
+                      height: size.height * 0.02,
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Bienvenue ${userd['Nom']} ${userd['Prénom']}',
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: size.width * 0.06),
+                        ),
+                      ],
+                    ),
+                    SizedBox(
+                      height: size.height * 0.01,
+                    ),
+                    StreamBuilder(
+                        stream: FirebaseFirestore.instance
+                            .collection('User')
+                            .where('id', isEqualTo: _user.uid)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Center(
+                              child: Platform.isAndroid
+                                  ? const CircularProgressIndicator(
+                                      color: Color.fromARGB(255, 30, 60, 100),
+                                    )
+                                  : const CupertinoActivityIndicator(),
                             );
                           }
-                        }
-                        return Text(
-                          message,
-                          style: TextStyle(fontSize: size.width * 0.05),
-                        );
-                      }),
-                  const Padding(
-                    padding: EdgeInsets.all(8.0),
-                    child: Divider(),
-                  ),
-                  SizedBox(
-                    height: size.height * 0.02,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Bienvenue ${_userData!.nom} ${_userData!.prenom}',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: size.width * 0.06),
-                      ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: size.height * 0.01,
-                  ),
-                  StreamBuilder(
-                      stream: FirebaseFirestore.instance
-                          .collection('User')
-                          .where('id', isEqualTo: _user.uid)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return Center(
-                            child: Platform.isAndroid
-                                ? const CircularProgressIndicator(
-                                    color: Color.fromARGB(255, 30, 60, 100),
-                                  )
-                                : const CupertinoActivityIndicator(),
+                          final userSnapshot = snapshot.data?.docs;
+                          final user = userSnapshot!.first;
+                          final userData = user.data();
+                          int a;
+                          double b = userData['Sanctions'] as double;
+                          if (b - b.truncate() < 0.6) {
+                            a = b.truncate();
+                          } else {
+                            a = b.ceil();
+                          }
+                          return Container(
+                            width: size.width * 0.9,
+                            padding: EdgeInsets.all(size.width * 0.03),
+                            decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 224, 227, 241),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: const Color.fromARGB(
+                                        255, 30, 60, 100))),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Text(
+                                      "Nombre de mois éffectués: ",
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.04),
+                                    ),
+                                    Text(
+                                      '${userData['NbMois']}',
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.04,
+                                          fontWeight: FontWeight.bold),
+                                    )
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      'Solde de congé: ',
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.04),
+                                    ),
+                                    Text(
+                                      '${userData['Solde congé']}',
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.04,
+                                          fontWeight: FontWeight.bold),
+                                    )
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      "Congés pris: ",
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.04),
+                                    ),
+                                    Text(
+                                      '${userData['Congé pris']}',
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.04,
+                                          fontWeight: FontWeight.bold,
+                                          color: const Color.fromARGB(
+                                              255, 221, 204, 53)),
+                                    )
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      "Sanctions: ",
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.04),
+                                    ),
+                                    Text(
+                                      a.toString(),
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.04,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.red),
+                                    )
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      "Reste de congés: ",
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.04),
+                                    ),
+                                    Text(
+                                      '${userData['resteConge']}',
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.04,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green),
+                                    )
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      "Reste de congés de l'année précédente: ",
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.04),
+                                    ),
+                                    Text(
+                                      '${userData['Solde congé année prec']}',
+                                      style: TextStyle(
+                                          fontSize: size.width * 0.04,
+                                          fontWeight: FontWeight.bold),
+                                    )
+                                  ],
+                                )
+                              ],
+                            ),
                           );
-                        }
-                        final userSnapshot = snapshot.data?.docs;
-                        final user = userSnapshot!.first;
-                        final userData = user.data();
-                        int a;
-                        double b = userData['Sanctions'] as double;
-                        if (b - b.truncate() < 0.6) {
-                          a = b.truncate();
-                        } else {
-                          a = b.ceil();
-                        }
-                        return Container(
-                          width: size.width * 0.9,
-                          padding: EdgeInsets.all(size.width * 0.03),
-                          decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 224, 227, 241),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                  color:
-                                      const Color.fromARGB(255, 30, 60, 100))),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    "Nombre de mois éffectués: ",
-                                    style:
-                                        TextStyle(fontSize: size.width * 0.04),
-                                  ),
-                                  Text(
-                                    '${userData['NbMois']}',
-                                    style: TextStyle(
-                                        fontSize: size.width * 0.04,
-                                        fontWeight: FontWeight.bold),
-                                  )
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Text(
-                                    'Solde de congé: ',
-                                    style:
-                                        TextStyle(fontSize: size.width * 0.04),
-                                  ),
-                                  Text(
-                                    '${userData['Solde congé']}',
-                                    style: TextStyle(
-                                        fontSize: size.width * 0.04,
-                                        fontWeight: FontWeight.bold),
-                                  )
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Text(
-                                    "Congés pris: ",
-                                    style:
-                                        TextStyle(fontSize: size.width * 0.04),
-                                  ),
-                                  Text(
-                                    '${userData['Congé pris']}',
-                                    style: TextStyle(
-                                        fontSize: size.width * 0.04,
-                                        fontWeight: FontWeight.bold,
-                                        color: const Color.fromARGB(
-                                            255, 221, 204, 53)),
-                                  )
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Text(
-                                    "Sanctions: ",
-                                    style:
-                                        TextStyle(fontSize: size.width * 0.04),
-                                  ),
-                                  Text(
-                                    a.toString(),
-                                    style: TextStyle(
-                                        fontSize: size.width * 0.04,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.red),
-                                  )
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Text(
-                                    "Reste de congés: ",
-                                    style:
-                                        TextStyle(fontSize: size.width * 0.04),
-                                  ),
-                                  Text(
-                                    '${userData['resteConge']}',
-                                    style: TextStyle(
-                                        fontSize: size.width * 0.04,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.green),
-                                  )
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Text(
-                                    "Reste de congés de l'année précédente: ",
-                                    style:
-                                        TextStyle(fontSize: size.width * 0.04),
-                                  ),
-                                  Text(
-                                    '${userData['Solde congé année prec']}',
-                                    style: TextStyle(
-                                        fontSize: size.width * 0.04,
-                                        fontWeight: FontWeight.bold),
-                                  )
-                                ],
-                              )
-                            ],
-                          ),
-                        );
-                      }),
-                  SizedBox(
-                    height: size.height * 0.03,
-                  ),
-                  Container(
-                    width: size.width * 0.9,
-                    height: size.height * 0.07,
-                    decoration: const BoxDecoration(
-                        color: Color.fromARGB(255, 30, 60, 100),
-                        borderRadius: BorderRadius.all(Radius.circular(5))),
-                    child: TextButton(
-                        onPressed: () {
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) {
-                            return const LeaveRequest();
-                          }));
-                        },
-                        child: Text(
-                          'Demander congé',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: size.width * 0.055),
-                        )),
-                  ),
-                  SizedBox(height: size.height * 0.025),
-                  Container(
-                    width: size.width * 0.9,
-                    height: size.height * 0.07,
-                    decoration: const BoxDecoration(
-                        color: Color.fromARGB(255, 30, 60, 100),
-                        borderRadius: BorderRadius.all(Radius.circular(5))),
-                    child: TextButton(
-                        onPressed: () {
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) {
-                            return const PermissionRequest();
-                          }));
-                        },
-                        child: Text(
-                          'Demander autorisation',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: size.width * 0.055),
-                        )),
-                  ),
-                  SizedBox(height: size.height * 0.025),
-                  Container(
-                    width: size.width * 0.9,
-                    height: size.height * 0.07,
-                    decoration: const BoxDecoration(
-                        color: Color.fromARGB(255, 30, 60, 100),
-                        borderRadius: BorderRadius.all(Radius.circular(5))),
-                    child: TextButton(
-                        onPressed: () {
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) {
-                            return const Scaffold();
-                          }));
-                        },
-                        child: Text(
-                          'Retards',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: size.width * 0.055),
-                        )),
-                  ),
-                  SizedBox(height: size.height * 0.025),
-                  Container(
-                    width: size.width * 0.9,
-                    height: size.height * 0.07,
-                    decoration: const BoxDecoration(
-                        color: Color.fromARGB(255, 30, 60, 100),
-                        borderRadius: BorderRadius.all(Radius.circular(5))),
-                    child: TextButton(
-                        onPressed: () {
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) {
-                            return const Scaffold();
-                          }));
-                        },
-                        child: Text(
-                          'Pénalités',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: size.width * 0.055),
-                        )),
-                  ),
-                  SizedBox(height: size.height * 0.025),
-                  Container(
-                    width: size.width * 0.9,
-                    height: size.height * 0.07,
-                    decoration: const BoxDecoration(
-                        color: Color.fromARGB(255, 30, 60, 100),
-                        borderRadius: BorderRadius.all(Radius.circular(5))),
-                    child: TextButton(
-                        onPressed: () {
-                          Navigator.push(context,
-                              MaterialPageRoute(builder: (context) {
-                            return const Scaffold();
-                          }));
-                        },
-                        child: Text(
-                          'Absences',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: size.width * 0.055),
-                        )),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.all(size.height * 0.01),
-                    child: Image.asset('assets/picture.png',
-                        scale: size.height * 0.025),
-                  ),
-                ],
+                        }),
+                    SizedBox(
+                      height: size.height * 0.03,
+                    ),
+                    Container(
+                      width: size.width * 0.9,
+                      height: size.height * 0.07,
+                      decoration: const BoxDecoration(
+                          color: Color.fromARGB(255, 30, 60, 100),
+                          borderRadius: BorderRadius.all(Radius.circular(5))),
+                      child: TextButton(
+                          onPressed: () {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return const LeaveRequest();
+                            }));
+                          },
+                          child: Text(
+                            'Demander congé',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: size.width * 0.055),
+                          )),
+                    ),
+                    SizedBox(height: size.height * 0.025),
+                    Container(
+                      width: size.width * 0.9,
+                      height: size.height * 0.07,
+                      decoration: const BoxDecoration(
+                          color: Color.fromARGB(255, 30, 60, 100),
+                          borderRadius: BorderRadius.all(Radius.circular(5))),
+                      child: TextButton(
+                          onPressed: () {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return const PermissionRequest();
+                            }));
+                          },
+                          child: Text(
+                            'Demander autorisation',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: size.width * 0.055),
+                          )),
+                    ),
+                    SizedBox(height: size.height * 0.025),
+                    Container(
+                      width: size.width * 0.9,
+                      height: size.height * 0.07,
+                      decoration: const BoxDecoration(
+                          color: Color.fromARGB(255, 30, 60, 100),
+                          borderRadius: BorderRadius.all(Radius.circular(5))),
+                      child: TextButton(
+                          onPressed: () {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return const Scaffold();
+                            }));
+                          },
+                          child: Text(
+                            'Retards',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: size.width * 0.055),
+                          )),
+                    ),
+                    SizedBox(height: size.height * 0.025),
+                    Container(
+                      width: size.width * 0.9,
+                      height: size.height * 0.07,
+                      decoration: const BoxDecoration(
+                          color: Color.fromARGB(255, 30, 60, 100),
+                          borderRadius: BorderRadius.all(Radius.circular(5))),
+                      child: TextButton(
+                          onPressed: () {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return const Scaffold();
+                            }));
+                          },
+                          child: Text(
+                            'Pénalités',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: size.width * 0.055),
+                          )),
+                    ),
+                    SizedBox(height: size.height * 0.025),
+                    Container(
+                      width: size.width * 0.9,
+                      height: size.height * 0.07,
+                      decoration: const BoxDecoration(
+                          color: Color.fromARGB(255, 30, 60, 100),
+                          borderRadius: BorderRadius.all(Radius.circular(5))),
+                      child: TextButton(
+                          onPressed: () {
+                            Navigator.push(context,
+                                MaterialPageRoute(builder: (context) {
+                              return const Scaffold();
+                            }));
+                          },
+                          child: Text(
+                            'Absences',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: size.width * 0.055),
+                          )),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.all(size.height * 0.01),
+                      child: Image.asset('assets/picture.png',
+                          scale: size.height * 0.025),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
-    );
+          );
+        });
   }
 
   String sumDurations(String duration1, String duration2) {
@@ -894,4 +909,3 @@ class _HomeState extends State<Home> {
     return '${tardinessHours}H ${tardinessRemainingMinutes}m';
   }
 }
-/**/
