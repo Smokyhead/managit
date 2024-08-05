@@ -62,6 +62,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
   final dateContr = TextEditingController();
   final dateContr1 = TextEditingController();
   final dateContr2 = TextEditingController();
+  final reasonController = TextEditingController();
   DateTime? _selectedDate;
   DateTime? _selectedDate1;
   DateTime? _selectedDate2;
@@ -119,6 +120,43 @@ class _LeaveRequestState extends State<LeaveRequest> {
     return dateTime2.difference(dateTime1).inDays;
   }
 
+  List<Map<String, int>> tunisianHolidays = [
+    {'month': 1, 'day': 1}, // New Year's Day
+    {'month': 3, 'day': 20}, // Independence Day
+    {'month': 4, 'day': 9}, // Martyrs' Day
+    {'month': 5, 'day': 1}, // Labour Day
+    {'month': 7, 'day': 25}, // Republic Day
+    {'month': 8, 'day': 13}, // Women's Day
+    {'month': 10, 'day': 15}, // Evacuation Day
+    // Moveable Islamic holidays, for example, Eid al-Fitr and Eid al-Adha,
+    // are not included here because their dates vary each year.
+    // You can add them dynamically based on the lunar calendar calculations.
+  ];
+
+  bool isHoliday(DateTime date) {
+    return tunisianHolidays.any((holiday) =>
+        holiday['day'] == date.day && holiday['month'] == date.month);
+  }
+
+  bool isWeekend(DateTime date) {
+    return date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
+  }
+
+  int calculateBusinessDays(DateTime startDate, DateTime endDate) {
+    int days = 0;
+    DateTime currentDate = startDate;
+
+    while (currentDate.isBefore(endDate) ||
+        currentDate.isAtSameMomentAs(endDate)) {
+      if (!isWeekend(currentDate) && !isHoliday(currentDate)) {
+        days++;
+      }
+      currentDate = currentDate.add(const Duration(days: 1));
+    }
+
+    return days;
+  }
+
   Future<void> saveLeaveDataOneDay({
     required String userId,
     required String leaveType,
@@ -140,6 +178,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'user': '${_userData.nom} ${_userData.prenom}',
         'date': formattedDate,
         'days': 1,
+        'reason': reasonController.text,
         'isRead': false,
         'validé': false,
         'typeNot': 'leaveRequest',
@@ -153,6 +192,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'days': 1,
         'status': 'pending', // Initial status can be pending
         'requestDate': Timestamp.now(), // Date of the request
+        'reason': reasonController.text
       });
 
       print('Leave request saved successfully.');
@@ -195,6 +235,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'startDate': formattedDate1,
         'endDate': formattedDate2,
         'days': numberOfDays(formattedDate1, formattedDate2) + 1,
+        'reason': reasonController.text,
         'isRead': false,
         'validé': false,
         'typeNot': 'leaveRequest',
@@ -207,6 +248,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'startDate': formattedDate1,
         'endDate': formattedDate2,
         'days': numberOfDays(formattedDate1, formattedDate2) + 1,
+        'reason': reasonController.text,
         'status': 'pending', // Initial status can be pending
         'requestDate': Timestamp.now(), // Date of the request
       });
@@ -554,16 +596,20 @@ class _LeaveRequestState extends State<LeaveRequest> {
                           ],
                         ),
                 ),
-                SizedBox(height: size.height * 0.05),
+                SizedBox(height: size.height * 0.02),
                 const Text(
                   "Nature de congé",
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
                 ),
                 SizedBox(height: size.height * 0.01),
                 Container(
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                          color: const Color.fromARGB(255, 30, 60, 100)),
+                      color: const Color.fromARGB(255, 224, 227, 241)),
                   padding: EdgeInsets.symmetric(horizontal: size.width * 0.05),
                   width: size.width * 0.9,
-                  color: const Color.fromARGB(255, 224, 227, 241),
                   child: DropdownButtonFormField<LeaveType>(
                     decoration: const InputDecoration(
                       border: InputBorder.none,
@@ -583,7 +629,35 @@ class _LeaveRequestState extends State<LeaveRequest> {
                     }).toList(),
                   ),
                 ),
-                SizedBox(height: size.height * 0.2),
+                SizedBox(height: size.height * 0.02),
+                const Text(
+                  "Raison",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: size.height * 0.01),
+                TextFormField(
+                  textCapitalization: TextCapitalization.sentences,
+                  controller: reasonController,
+                  maxLines: 5,
+                  decoration: InputDecoration(
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: Color.fromARGB(255, 30, 60, 100),
+                      ),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(
+                        color: Color.fromARGB(255, 30, 60, 100),
+                      ),
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    filled: true,
+                    fillColor: const Color.fromARGB(255, 224, 227, 241),
+                    hintText: "Écrivez la raison ici...",
+                  ),
+                ),
+                SizedBox(height: size.height * 0.02),
                 Center(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
