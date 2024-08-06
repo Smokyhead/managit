@@ -126,11 +126,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
     {'month': 4, 'day': 9}, // Martyrs' Day
     {'month': 5, 'day': 1}, // Labour Day
     {'month': 7, 'day': 25}, // Republic Day
-    {'month': 8, 'day': 13}, // Women's Day
     {'month': 10, 'day': 15}, // Evacuation Day
-    // Moveable Islamic holidays, for example, Eid al-Fitr and Eid al-Adha,
-    // are not included here because their dates vary each year.
-    // You can add them dynamically based on the lunar calendar calculations.
   ];
 
   bool isHoliday(DateTime date) {
@@ -234,7 +230,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'user': '${_userData.nom} ${_userData.prenom}',
         'startDate': formattedDate1,
         'endDate': formattedDate2,
-        'days': numberOfDays(formattedDate1, formattedDate2) + 1,
+        'days': calculateBusinessDays(_selectedDate1!, _selectedDate2!),
         'reason': reasonController.text,
         'isRead': false,
         'validé': false,
@@ -247,7 +243,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'leaveType': leaveType,
         'startDate': formattedDate1,
         'endDate': formattedDate2,
-        'days': numberOfDays(formattedDate1, formattedDate2) + 1,
+        'days': calculateBusinessDays(_selectedDate1!, _selectedDate2!),
         'reason': reasonController.text,
         'status': 'pending', // Initial status can be pending
         'requestDate': Timestamp.now(), // Date of the request
@@ -551,6 +547,9 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                                   DateFormat('dd-MM-yyyy')
                                                       .format(_selectedDate2!);
                                               dateContr2.text = formattedDate2;
+                                              calculateBusinessDays(
+                                                  _selectedDate1!,
+                                                  _selectedDate2!);
                                             }
                                           });
                                         },
@@ -586,7 +585,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                 padding:
                                     EdgeInsets.only(top: size.width * 0.07),
                                 child: Text(
-                                  "Nombre de jours : ${numberOfDays(formattedDate1, formattedDate2) + 1}",
+                                  "Nombre de jours : ${calculateBusinessDays(_selectedDate1!, _selectedDate2!)}",
                                   style: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.w600),
@@ -674,20 +673,61 @@ class _LeaveRequestState extends State<LeaveRequest> {
                       if (_formKey.currentState!.validate()) {
                         if (_leaveDuration == LeaveDuration.journee &&
                             dateContr.text.isNotEmpty) {
-                          onSubmitLeaveRequestOneDay();
+                          if (isHoliday(_selectedDate!) ||
+                              isWeekend(_selectedDate!)) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Le congé ne peut pas être au cours d\'un weekend ou un jour ferié'),
+                              ),
+                            );
+                          } else {
+                            if ((_userData.soldeAnneePrec +
+                                        _userData.soldeConge) -
+                                    1 >=
+                                0) {
+                              onSubmitLeaveRequestOneDay();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Demande de congé soumise avec succès'),
+                                ),
+                              );
+                              Navigator.of(context).pop();
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Solde insuffisant'),
+                                ),
+                              );
+                            }
+                          }
                         }
+
                         if (_leaveDuration == LeaveDuration.prolonge &&
                             dateContr1.text.isNotEmpty &&
                             dateContr2.text.isNotEmpty) {
-                          onSubmitLeaveRequest();
+                          if ((_userData.soldeAnneePrec +
+                                      _userData.soldeConge) -
+                                  calculateBusinessDays(
+                                      _selectedDate1!, _selectedDate2!) >=
+                              0) {
+                            onSubmitLeaveRequest();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Demande de congé soumise avec succès'),
+                              ),
+                            );
+                            Navigator.of(context).pop();
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Solde insuffisant'),
+                              ),
+                            );
+                          }
                         }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content:
-                                Text('Demande de congé soumise avec succès'),
-                          ),
-                        );
-                        Navigator.of(context).pop();
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
