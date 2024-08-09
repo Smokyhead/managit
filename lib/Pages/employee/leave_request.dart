@@ -113,13 +113,6 @@ class _LeaveRequestState extends State<LeaveRequest> {
         length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
   }
 
-  int numberOfDays(String date1, String date2) {
-    final format = DateFormat('dd-MM-yyyy');
-    final DateTime dateTime1 = format.parse(date1);
-    final DateTime dateTime2 = format.parse(date2);
-    return dateTime2.difference(dateTime1).inDays;
-  }
-
   List<Map<String, int>> tunisianHolidays = [
     {'month': 1, 'day': 1}, // New Year's Day
     {'month': 3, 'day': 20}, // Independence Day
@@ -180,14 +173,14 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'typeNot': 'leaveRequest',
         'status': 'pending'
       });
-      FirebaseFirestore.instance.collection('LeaveRequests').doc(leaveId).set({
+      FirebaseFirestore.instance.collection('LeaveRequest').doc(leaveId).set({
         'id': leaveId,
         'userId': userId,
         'leaveType': leaveType,
         'date': formattedDate,
         'days': 1,
         'status': 'pending', // Initial status can be pending
-        'requestDate': Timestamp.now(), // Date of the request
+        'requestDate': DateTime.now(), // Date of the request
         'reason': reasonController.text
       });
 
@@ -237,7 +230,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'typeNot': 'leaveRequest',
         'status': 'pending'
       });
-      FirebaseFirestore.instance.collection('LeaveRequests').doc(leaveId).set({
+      FirebaseFirestore.instance.collection('LeaveRequest').doc(leaveId).set({
         'id': leaveId,
         'userId': userId,
         'leaveType': leaveType,
@@ -378,7 +371,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                       setState(() {
                                         if (_selectedDate != null) {
                                           formattedDate =
-                                              DateFormat('dd-MM-yyyy')
+                                              DateFormat('dd/MM/yyyy')
                                                   .format(_selectedDate!);
                                           dateContr.text = formattedDate;
                                         }
@@ -386,7 +379,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                     },
                                     child: Text(
                                       formattedDate.isEmpty
-                                          ? "jj - mm - aaaa"
+                                          ? "jj / mm / aaaa"
                                           : formattedDate,
                                       style: const TextStyle(
                                           fontWeight: FontWeight.w500,
@@ -462,7 +455,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                           setState(() {
                                             if (_selectedDate1 != null) {
                                               formattedDate1 =
-                                                  DateFormat('dd-MM-yyyy')
+                                                  DateFormat('dd/MM/yyyy')
                                                       .format(_selectedDate1!);
                                               dateContr1.text = formattedDate1;
                                             }
@@ -470,7 +463,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                         },
                                         child: Text(
                                           formattedDate1.isEmpty
-                                              ? "jj - mm - aaaa"
+                                              ? "jj / mm / aaaa"
                                               : formattedDate1,
                                           style: const TextStyle(
                                               fontWeight: FontWeight.w500,
@@ -544,7 +537,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                           setState(() {
                                             if (_selectedDate2 != null) {
                                               formattedDate2 =
-                                                  DateFormat('dd-MM-yyyy')
+                                                  DateFormat('dd/MM/yyyy')
                                                       .format(_selectedDate2!);
                                               dateContr2.text = formattedDate2;
                                               calculateBusinessDays(
@@ -555,7 +548,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                                         },
                                         child: Text(
                                           formattedDate2.isEmpty
-                                              ? "jj - mm - aaaa"
+                                              ? "jj / mm / aaaa"
                                               : formattedDate2,
                                           style: const TextStyle(
                                               fontWeight: FontWeight.w500,
@@ -678,7 +671,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                    'Le congé ne peut pas être au cours d\'un weekend ou un jour ferié'),
+                                    'Les congés ne peuvent pas être demandées pour le week-end ou les jours feriés'),
                               ),
                             );
                           } else {

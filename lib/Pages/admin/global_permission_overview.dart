@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,27 +12,14 @@ class GlobalPermissionOverview extends StatefulWidget {
 }
 
 class _GlobalPermissionOverviewState extends State<GlobalPermissionOverview> {
-  String? selectedEmployee;
-  int selectedYear = DateTime.now().year;
-  List<String> employeeList = [];
-  List<int> yearList =
-      List<int>.generate(10, (index) => DateTime.now().year - index);
+  String? _selectedEmployee;
+  String? _selectedId;
+  int _selectedYear = 2024;
+  List<int> years = [2024, 2025, 2026];
 
   @override
   void initState() {
     super.initState();
-    _fetchEmployeeList();
-  }
-
-  Future<void> _fetchEmployeeList() async {
-    final QuerySnapshot snapshot =
-        await FirebaseFirestore.instance.collection('User').get();
-    setState(() {
-      employeeList = snapshot.docs
-          .map((doc) => doc.id)
-          .toList(); // Assuming doc.id is the employee's ID or name
-    });
-    // Debugging line
   }
 
   @override
@@ -40,136 +28,144 @@ class _GlobalPermissionOverviewState extends State<GlobalPermissionOverview> {
     return Scaffold(
       body: Column(
         children: [
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: size.width * 0.02),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                DropdownButton<String>(
-                  hint: const Text('Employé'),
-                  value: selectedEmployee,
-                  items: employeeList.map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('User')
+                    .where('role', isEqualTo: 'employee')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(
+                      child: Platform.isAndroid
+                          ? const CircularProgressIndicator(
+                              color: Color.fromARGB(255, 30, 60, 100),
+                            )
+                          : const CupertinoActivityIndicator(),
                     );
-                  }).toList(),
-                  onChanged: (newValue) {
-                    setState(() {
-                      selectedEmployee = newValue;
-                    });
-                    // Debugging line
-                  },
-                ),
-                DropdownButton<int>(
-                  hint: const Text('Année'),
-                  value: selectedYear,
-                  items: yearList.map((int value) {
+                  }
+                  final employees = snapshot.data!.docs;
+                  return SizedBox(
+                      width: size.width * 0.5,
+                      child: DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          labelText: 'Employé',
+                        ),
+                        value: _selectedEmployee, // Set the initial value here
+                        items: employees.map((employee) {
+                          return DropdownMenuItem<String>(
+                            onTap: () {
+                              _selectedId = employee['id'];
+                            },
+                            value: '${employee['Nom']} ${employee['Prénom']}',
+                            child: Text(
+                                '${employee['Nom']} ${employee['Prénom']}'),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedEmployee = value;
+                          });
+                        },
+                      ));
+                },
+              ),
+              SizedBox(
+                width: size.width * 0.3,
+                child: DropdownButtonFormField<int>(
+                  decoration: const InputDecoration(
+                    labelText: 'Année',
+                  ),
+                  items: years.map((year) {
                     return DropdownMenuItem<int>(
-                      value: value,
-                      child: Text(value.toString()),
+                      value: year,
+                      child: Text('$year'),
                     );
                   }).toList(),
-                  onChanged: (newValue) {
+                  onChanged: (value) {
                     setState(() {
-                      selectedYear = newValue!;
+                      _selectedYear = value!;
                     });
-                    // Debugging line
                   },
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          SizedBox(
+            height: size.height * 0.02,
           ),
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: size.width * 0.02),
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: size.height * 0.01,
-                    ),
-                    StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('Autorisation')
-                          .where('userId', isEqualTo: selectedEmployee)
-                          .where('date',
-                              isGreaterThanOrEqualTo: '$selectedYear-01-01')
-                          .where('date',
-                              isLessThanOrEqualTo: '$selectedYear-12-31')
-                          .snapshots(),
-                      builder: (context, snapshots) {
-                        if (snapshots.connectionState ==
-                            ConnectionState.waiting) {
-                          return Center(
-                            child: Platform.isAndroid
-                                ? const CircularProgressIndicator(
-                                    color: Color.fromARGB(255, 30, 60, 100),
+            child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('Autorisation')
+                    .where('userId', isEqualTo: _selectedId)
+                    .where('year', isEqualTo: _selectedYear)
+                    .where('status', isEqualTo: 'approved')
+                    .snapshots(),
+                builder: (content, snapshots) {
+                  if (snapshots.connectionState == ConnectionState.waiting) {
+                    return Center(
+                      child: Platform.isAndroid
+                          ? const CircularProgressIndicator(
+                              color: Color.fromARGB(255, 30, 60, 100),
+                            )
+                          : const CupertinoActivityIndicator(),
+                    );
+                  }
+                  final docs = snapshots.data?.docs;
+                  if (docs == null || docs.isEmpty) {
+                    return const Center(
+                      child: Text(
+                        "Rien à afficher",
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            color: Colors.grey),
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  } else {}
+                  return SizedBox(
+                    child: ListView.separated(
+                        separatorBuilder: (context, index) => const SizedBox(),
+                        itemCount: snapshots.data!.docs.length,
+                        itemBuilder: (context, index) {
+                          var data = snapshots.data!.docs[index].data()
+                              as Map<String, dynamic>;
+                          return Container(
+                            margin: EdgeInsets.all(size.width * 0.02),
+                            decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 215, 230, 245),
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(
+                                    color: const Color.fromARGB(
+                                        255, 30, 60, 100))),
+                            child: ListTile(
+                              title: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    data['date'],
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: size.width * 0.05),
+                                  ),
+                                  Text(
+                                      "De '${data['startTime']}'  à  '${data['endTime']}'  (${data['hours']} heures)"),
+                                  Text(
+                                    data['reason'],
+                                    maxLines: 3,
                                   )
-                                : const CupertinoActivityIndicator(),
-                          );
-                        }
-                        final docs = snapshots.data?.docs;
-                        if (docs == null || docs.isEmpty) {
-                          return const Center(
-                            child: Text(
-                              "Rien à afficher pour le moment",
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 20,
-                                  color: Colors.grey),
-                              textAlign: TextAlign.center,
-                            ),
-                          );
-                        } else {
-                          final columnOrder = [
-                            'Nom',
-                            'Prénom',
-                            'Date',
-                            'Heure début',
-                            'Heure fin',
-                            'Description'
-                          ];
-                          final columnKeys =
-                              (docs.first.data() as Map<String, dynamic>)
-                                  .keys
-                                  .where((key) => columnOrder.contains(key))
-                                  .toList();
-                          columnKeys.sort((a, b) => columnOrder
-                              .indexOf(a)
-                              .compareTo(columnOrder.indexOf(b)));
-                          return SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: SingleChildScrollView(
-                              child: DataTable(
-                                border: TableBorder.all(color: Colors.grey),
-                                headingRowColor: const WidgetStatePropertyAll(
-                                    Color.fromARGB(255, 210, 213, 232)),
-                                columns: columnKeys
-                                    .map((key) => DataColumn(label: Text(key)))
-                                    .toList(),
-                                rows: docs.map((document) {
-                                  final documentData =
-                                      document.data() as Map<String, dynamic>;
-                                  return DataRow(
-                                    cells: columnKeys.map((key) {
-                                      return DataCell(Text(
-                                          documentData[key]?.toString() ?? ''));
-                                    }).toList(),
-                                  );
-                                }).toList(),
+                                ],
                               ),
                             ),
                           );
-                        }
-                      },
-                    )
-                  ],
-                ),
-              ),
-            ),
-          ),
+                        }),
+                  );
+                }),
+          )
         ],
       ),
     );

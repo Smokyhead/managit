@@ -132,6 +132,7 @@ class _MonthSythesisState extends State<MonthSythesis> {
                         value: user,
                         child: Text('${user.nom} ${user.prenom}'),
                       );
+                    // ignore: unnecessary_to_list_in_spreads
                     }).toList(),
                   ],
                 ),
@@ -211,9 +212,7 @@ class _MonthSythesisState extends State<MonthSythesis> {
                       ],
                       rows: months.asMap().entries.map((entry) {
                         String monthKey =
-                            (entry.key + 1).toString().padLeft(2, '0') +
-                                '-' +
-                                (selectedYear ?? '');
+                            '${(entry.key + 1).toString().padLeft(2, '0')}-${selectedYear ?? ''}';
                         int totalMinutes = yearlyTardiness
                             .firstWhere((element) => element.key == monthKey,
                                 orElse: () => MapEntry(monthKey, 0))

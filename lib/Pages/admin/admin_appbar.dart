@@ -74,7 +74,7 @@ class AdminAppBarState extends State<AdminAppBar> {
     'Sythèse de mois',
     'Pointage quotidient',
     'Vue globale de congés',
-    'Vue globale de permissions',
+    'Vue globale d\'autorisations',
     'Gestion utilisateurs',
     'Gestion des absences',
     'Gestion des retards',
@@ -253,7 +253,7 @@ class AdminAppBarState extends State<AdminAppBar> {
                   onTap: () => _selectPage(3),
                 ),
                 ListTile(
-                  title: Text('Vue globale de permissions',
+                  title: Text('Vue globale d\'autorisations',
                       style: TextStyle(
                           color:
                               _selectedPageIndex == 4 ? null : Colors.white)),

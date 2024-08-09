@@ -65,6 +65,20 @@ class _PermissionRequestState extends State<PermissionRequest> {
     _fetchUserData();
   }
 
+  List<Map<String, int>> tunisianHolidays = [
+    {'month': 1, 'day': 1}, // New Year's Day
+    {'month': 3, 'day': 20}, // Independence Day
+    {'month': 4, 'day': 9}, // Martyrs' Day
+    {'month': 5, 'day': 1}, // Labour Day
+    {'month': 7, 'day': 25}, // Republic Day
+    {'month': 10, 'day': 15}, // Evacuation Day
+  ];
+
+  bool isHoliday(DateTime date) {
+    return tunisianHolidays.any((holiday) =>
+        holiday['day'] == date.day && holiday['month'] == date.month);
+  }
+
   Future<UserData> getCurrentUserData() async {
     final DocumentSnapshot<Map<String, dynamic>> snapshot =
         await FirebaseFirestore.instance
@@ -113,9 +127,11 @@ class _PermissionRequestState extends State<PermissionRequest> {
       'date': formattedDate,
       'startTime': selectedStartTime,
       'endTime': selectedEndTime,
+      'hours': calculateHoursDifference(selectedStartTime!, selectedEndTime!),
       'reason': reason,
       'status': 'pending',
-      'requestDate': Timestamp.now(),
+      'requestDate': DateTime.now(),
+      'year': DateTime.now().year
     });
     FirebaseFirestore.instance
         .collection('Notification')
@@ -128,6 +144,7 @@ class _PermissionRequestState extends State<PermissionRequest> {
       'timestamp': DateTime.now(),
       'content':
           '${_userData.nom} ${_userData.prenom} souhaite prendre une autorisation.\nTapez pour voir les détails.',
+      'reason': reasonController.text,
       'date': formattedDate,
       'startTime': selectedStartTime,
       'endTime': selectedEndTime,
@@ -146,7 +163,7 @@ class _PermissionRequestState extends State<PermissionRequest> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-                "Les autorisations ne peuvent pas être demandées pour le week-end."),
+                "Les autorisations ne peuvent pas être demandées pour le week-end"),
           ),
         );
         return;
@@ -167,7 +184,7 @@ class _PermissionRequestState extends State<PermissionRequest> {
     );
   }
 
-  double calculateHoursDifference(String startTime, String endTime) {
+  int calculateHoursDifference(String startTime, String endTime) {
     // Parse the start time and end time
     TimeOfDay start = TimeOfDay(
       hour: int.parse(startTime.split(':')[0]),
@@ -186,7 +203,7 @@ class _PermissionRequestState extends State<PermissionRequest> {
     int differenceInMinutes = endInMinutes - startInMinutes;
     int differenceInHours = (differenceInMinutes / 60).floor();
 
-    return differenceInHours as double;
+    return differenceInHours;
   }
 
   @override
@@ -253,7 +270,7 @@ class _PermissionRequestState extends State<PermissionRequest> {
                                 );
                                 setState(() {
                                   if (_selectedDate != null) {
-                                    formattedDate = DateFormat('dd-MM-yyyy')
+                                    formattedDate = DateFormat('dd/MM/yyyy')
                                         .format(_selectedDate!);
                                     dateContr.text = formattedDate;
                                   }
@@ -261,7 +278,7 @@ class _PermissionRequestState extends State<PermissionRequest> {
                               },
                               child: Text(
                                 formattedDate.isEmpty
-                                    ? "jj - mm - aaaa"
+                                    ? "jj / mm / aaaa"
                                     : formattedDate,
                                 style: const TextStyle(
                                     fontWeight: FontWeight.w500, fontSize: 18),
@@ -445,14 +462,23 @@ class _PermissionRequestState extends State<PermissionRequest> {
                                 ),
                               );
                             } else {
-                              onSubmitPermissionRequest();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      "Demande d'autorisation soumise avec succès"),
-                                ),
-                              );
-                              Navigator.of(context).pop();
+                              if (isHoliday(_selectedDate!)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Les autorisations ne peuvent pas être demandées pour les jours feriés'),
+                                  ),
+                                );
+                              } else {
+                                onSubmitPermissionRequest();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        "Demande d'autorisation soumise avec succès"),
+                                  ),
+                                );
+                                Navigator.of(context).pop();
+                              }
                             }
                           },
                           child: const Text(
