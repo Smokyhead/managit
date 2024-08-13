@@ -874,8 +874,6 @@ class _HomeState extends State<Home> {
 
       tardiness = shiftEnd.difference(entry) - exit.difference(shiftStart);
     }
-
-    // Convert tardiness to string in the format '0H 0m'
     return _durationToString(tardiness);
   }
 

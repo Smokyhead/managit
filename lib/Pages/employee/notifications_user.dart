@@ -64,7 +64,7 @@ class NotificationsUserState extends State<NotificationsUser> {
                 bool isRead = data['isRead'] ?? false;
 
                 if (data['isRead'] == false) {
-                  Future.delayed(const Duration(seconds: 3), () {
+                  Future.delayed(const Duration(seconds: 1), () {
                     setState(() {
                       data['isRead'] = true;
                     });

@@ -16,8 +16,43 @@ class Notifications extends StatefulWidget {
 
 class NotificationsState extends State<Notifications> {
   final String today = DateFormat('dd/MM/yyyy').format(DateTime.now());
-  final h = TextEditingController();
-  final m = TextEditingController();
+  bool modifyPressed = false;
+  TimeOfDay? pickedTime;
+  String formattedTime = '';
+
+  Future<TimeOfDay> _selectTime(BuildContext context) async {
+    TimeOfDay? pickedTime;
+    pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    return pickedTime!;
+  }
+
+  Future<Map<String, dynamic>> getAtt(String id) async {
+    Map<String, dynamic>? data;
+    try {
+      DocumentReference docRef =
+          FirebaseFirestore.instance.collection('Attendance').doc(id);
+      DocumentSnapshot docSnapshot = await docRef.get();
+      if (docSnapshot.exists) {
+        data = docSnapshot.data() as Map<String, dynamic>?;
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print("Error getting document: $e");
+    }
+    return data!;
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final int hour = time.hour;
+    final int minute = time.minute;
+    final String formattedHour = hour.toString().padLeft(2, '0');
+    final String formattedMinute = minute.toString().padLeft(2, '0');
+
+    return '$formattedHour:$formattedMinute';
+  }
 
   String generateId() {
     final random = Random();
@@ -27,6 +62,35 @@ class NotificationsState extends State<Notifications> {
 
     return String.fromCharCodes(Iterable.generate(
         length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
+  }
+
+  String calculateDuration(String startTime, String endTime) {
+    // Parse the start time
+    List<String> startParts = startTime.split(':');
+    int startHour = int.parse(startParts[0]);
+    int startMinute = int.parse(startParts[1]);
+
+    // Parse the end time
+    List<String> endParts = endTime.split(':');
+    int endHour = int.parse(endParts[0]);
+    int endMinute = int.parse(endParts[1]);
+
+    // Create TimeOfDay objects
+    TimeOfDay start = TimeOfDay(hour: startHour, minute: startMinute);
+    TimeOfDay end = TimeOfDay(hour: endHour, minute: endMinute);
+
+    // Calculate the difference in minutes
+    int startInMinutes = start.hour * 60 + start.minute;
+    int endInMinutes = end.hour * 60 + end.minute;
+
+    int differenceInMinutes = endInMinutes - startInMinutes;
+
+    // Calculate hours and minutes
+    int hours = differenceInMinutes ~/ 60;
+    int minutes = differenceInMinutes % 60;
+
+    // Return the duration in '0H 0m' format
+    return '${hours}H ${minutes}m';
   }
 
   @override
@@ -99,383 +163,379 @@ class NotificationsState extends State<Notifications> {
                                     ? Padding(
                                         padding:
                                             EdgeInsets.all(size.height * 0.01),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceAround,
+                                        child: Column(
                                           children: [
-                                            ElevatedButton(
-                                                style: const ButtonStyle(
-                                                    shape: WidgetStatePropertyAll(
-                                                        RoundedRectangleBorder(
-                                                            borderRadius:
-                                                                BorderRadius.all(
-                                                                    Radius.circular(
-                                                                        15)))),
-                                                    foregroundColor:
-                                                        WidgetStatePropertyAll(
-                                                            Colors.white),
-                                                    backgroundColor:
-                                                        WidgetStatePropertyAll(
-                                                            Color.fromARGB(255,
-                                                                30, 60, 100))),
-                                                onPressed: () {
-                                                  final String id =
-                                                      generateId();
-                                                  FirebaseFirestore.instance
-                                                      .collection(
-                                                          'Notification')
-                                                      .doc(data['id'])
-                                                      .update({
-                                                    'validé': true,
-                                                    'isRead': true
-                                                  });
-                                                  FirebaseFirestore.instance
-                                                      .collection('Attendance')
-                                                      .doc(data['attendanceId'])
-                                                      .update({'sent': false});
-                                                  if (data['type'] ==
-                                                          'entréMatin' ||
-                                                      data['type'] ==
-                                                          'entréAM') {
-                                                    FirebaseFirestore.instance
-                                                        .collection(
-                                                            'UserNotification')
-                                                        .doc(id)
-                                                        .set({
-                                                      'id': id,
-                                                      'userID': data['userID'],
-                                                      'timestamp':
-                                                          DateTime.now(),
-                                                      'date': today,
-                                                      'content':
-                                                          'Votre pointage a été validé.',
-                                                      'isRead': false,
-                                                    });
-                                                  } else {
-                                                    FirebaseFirestore.instance
-                                                        .collection(
-                                                            'UserNotification')
-                                                        .doc(id)
-                                                        .set({
-                                                      'id': id,
-                                                      'userID': data['userID'],
-                                                      'timestamp':
-                                                          DateTime.now(),
-                                                      'date': today,
-                                                      'content':
-                                                          'Votre sortie a été validé.',
-                                                      'isRead': false,
-                                                    });
-                                                  }
-                                                },
-                                                child: Text(
-                                                  'Valider',
-                                                  style: TextStyle(
-                                                      fontSize:
-                                                          size.height * 0.02),
-                                                )),
-                                            ElevatedButton(
-                                                style: const ButtonStyle(
-                                                  side: WidgetStatePropertyAll(
-                                                      BorderSide(
-                                                          color: Color.fromARGB(
-                                                              255,
-                                                              30,
-                                                              60,
-                                                              100))),
-                                                  shape: WidgetStatePropertyAll(
-                                                      RoundedRectangleBorder(
-                                                          borderRadius:
-                                                              BorderRadius.all(
-                                                                  Radius
-                                                                      .circular(
-                                                                          15)))),
-                                                  foregroundColor:
-                                                      WidgetStatePropertyAll(
-                                                          Color.fromARGB(255,
-                                                              30, 60, 100)),
-                                                ),
-                                                onPressed: () {
-                                                  final String id =
-                                                      generateId();
-                                                  switch (data['type']) {
-                                                    case ('entréMatin'):
-                                                      showBottomSheet(
-                                                          context: context,
-                                                          builder: (BuildContext
-                                                              context) {
-                                                            return SizedBox(
-                                                              width: size.width,
-                                                              height:
-                                                                  size.height *
-                                                                      0.25,
-                                                              child: Column(
-                                                                children: [
-                                                                  SizedBox(
-                                                                    height: size
-                                                                            .height *
-                                                                        0.01,
-                                                                  ),
-                                                                  Text(
-                                                                      'Modifer l\'heure',
-                                                                      style: TextStyle(
-                                                                          fontWeight: FontWeight
-                                                                              .bold,
-                                                                          fontSize:
-                                                                              size.width * 0.05)),
-                                                                  SizedBox(
-                                                                    height: size
-                                                                            .height *
-                                                                        0.02,
-                                                                  ),
-                                                                  Row(
-                                                                    mainAxisAlignment:
-                                                                        MainAxisAlignment
-                                                                            .center,
-                                                                    children: [
-                                                                      SizedBox(
-                                                                        width: size.width *
-                                                                            0.1,
-                                                                        child:
-                                                                            TextField(
-                                                                          maxLength:
-                                                                              2,
-                                                                          controller:
-                                                                              h,
-                                                                          decoration:
-                                                                              const InputDecoration(
-                                                                            hintText:
-                                                                                '00',
-                                                                          ),
-                                                                        ),
-                                                                      ),
-                                                                      SizedBox(
-                                                                        width: size.width *
-                                                                            0.1,
-                                                                        child:
-                                                                            const TextField(
-                                                                          readOnly:
-                                                                              true,
-                                                                          decoration:
-                                                                              InputDecoration(
-                                                                            hintText:
-                                                                                ':',
-                                                                          ),
-                                                                        ),
-                                                                      ),
-                                                                      SizedBox(
-                                                                        width: size.width *
-                                                                            0.1,
-                                                                        child:
-                                                                            TextField(
-                                                                          maxLength:
-                                                                              2,
-                                                                          controller:
-                                                                              m,
-                                                                          decoration:
-                                                                              const InputDecoration(hintText: '00'),
-                                                                        ),
-                                                                      )
-                                                                    ],
-                                                                  ),
-                                                                  SizedBox(
-                                                                    height: size
-                                                                            .height *
-                                                                        0.02,
-                                                                  ),
-                                                                  Row(
-                                                                    mainAxisAlignment:
-                                                                        MainAxisAlignment
-                                                                            .spaceEvenly,
-                                                                    children: [
-                                                                      ElevatedButton(
-                                                                          style: const ButtonStyle(
-                                                                              shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(15)))),
-                                                                              foregroundColor: WidgetStatePropertyAll(Colors.white),
-                                                                              backgroundColor: WidgetStatePropertyAll(Color.fromARGB(255, 30, 60, 100))),
-                                                                          onPressed: () {
-                                                                            Navigator.of(context).pop();
-                                                                          },
-                                                                          child: const Text("Annuler")),
-                                                                      ElevatedButton(
-                                                                          style: const ButtonStyle(
-                                                                              shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(15)))),
-                                                                              foregroundColor: WidgetStatePropertyAll(Colors.white),
-                                                                              backgroundColor: WidgetStatePropertyAll(Color.fromARGB(255, 30, 60, 100))),
-                                                                          onPressed: () {
-                                                                            Navigator.of(context).pop();
-                                                                          },
-                                                                          child: const Text("Valider"))
-                                                                    ],
-                                                                  )
-                                                                ],
-                                                              ),
-                                                            );
-                                                          });
-                                                    // FirebaseFirestore.instance
-                                                    //     .collection(
-                                                    //         'Notification')
-                                                    //     .doc(data['id'])
-                                                    //     .update({
-                                                    //   'validé': true,
-                                                    //   'isRead': true
-                                                    // });
-                                                    // FirebaseFirestore.instance
-                                                    //     .collection(
-                                                    //         'Attendance')
-                                                    //     .doc(data[
-                                                    //         'attendanceId'])
-                                                    //     .delete();
-                                                    // FirebaseFirestore.instance
-                                                    //     .collection(
-                                                    //         'UserNotification')
-                                                    //     .doc(id)
-                                                    //     .set({
-                                                    //   'id': id,
-                                                    //   'userID':
-                                                    //       data['userID'],
-                                                    //   'timestamp':
-                                                    //       DateTime.now(),
-                                                    //   'date': today,
-                                                    //   'content':
-                                                    //       'Votre pointage a été refusé.',
-                                                    //   'isRead': false,
-                                                    // });
-                                                    case ('sortieMatin'):
-                                                      showDialog(
-                                                          context: context,
-                                                          builder: (BuildContext
-                                                              context) {
-                                                            return AlertDialog(
-                                                              shape: const RoundedRectangleBorder(
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceAround,
+                                              children: [
+                                                SizedBox(
+                                                  width: size.width * 0.3,
+                                                  child: ElevatedButton(
+                                                      style: const ButtonStyle(
+                                                          shape: WidgetStatePropertyAll(
+                                                              RoundedRectangleBorder(
                                                                   borderRadius:
                                                                       BorderRadius.all(
                                                                           Radius.circular(
-                                                                              15))),
-                                                              content: Column(
-                                                                children: [
-                                                                  const Text(
-                                                                      'Modifiez l\'heure'),
-                                                                  TimePickerDialog(
-                                                                      initialTime:
-                                                                          TimeOfDay
-                                                                              .now())
-                                                                ],
-                                                              ),
-                                                            );
+                                                                              15)))),
+                                                          foregroundColor:
+                                                              WidgetStatePropertyAll(
+                                                                  Colors.white),
+                                                          backgroundColor:
+                                                              WidgetStatePropertyAll(
+                                                                  Color.fromARGB(
+                                                                      255,
+                                                                      30,
+                                                                      60,
+                                                                      100))),
+                                                      onPressed: () {
+                                                        final String id =
+                                                            generateId();
+                                                        FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                                'Notification')
+                                                            .doc(data['id'])
+                                                            .update({
+                                                          'validé': true,
+                                                          'isRead': true
+                                                        });
+                                                        FirebaseFirestore
+                                                            .instance
+                                                            .collection(
+                                                                'Attendance')
+                                                            .doc(data[
+                                                                'attendanceId'])
+                                                            .update({
+                                                          'sent': false
+                                                        });
+                                                        if (data['type'] ==
+                                                                'entréMatin' ||
+                                                            data['type'] ==
+                                                                'entréAM') {
+                                                          FirebaseFirestore
+                                                              .instance
+                                                              .collection(
+                                                                  'UserNotification')
+                                                              .doc(id)
+                                                              .set({
+                                                            'id': id,
+                                                            'userID':
+                                                                data['userID'],
+                                                            'timestamp':
+                                                                DateTime.now(),
+                                                            'date': today,
+                                                            'content':
+                                                                'Votre pointage a été validé.',
+                                                            'isRead': false,
                                                           });
-                                                    // FirebaseFirestore.instance
-                                                    //     .collection(
-                                                    //         'Notification')
-                                                    //     .doc(data['id'])
-                                                    //     .update({
-                                                    //   'validé': true,
-                                                    //   'isRead': true
-                                                    // });
-                                                    // FirebaseFirestore.instance
-                                                    //     .collection(
-                                                    //         'Attendance')
-                                                    //     .doc(data[
-                                                    //         'attendanceId'])
-                                                    //     .update({
-                                                    //   'shiftMatin': '',
-                                                    //   'sortieMatin': '',
-                                                    //   'sent': false,
-                                                    //   'tardinessMatin': ''
-                                                    // });
-                                                    // FirebaseFirestore.instance
-                                                    //     .collection(
-                                                    //         'UserNotification')
-                                                    //     .doc(id)
-                                                    //     .set({
-                                                    //   'id': id,
-                                                    //   'userID':
-                                                    //       data['userID'],
-                                                    //   'timestamp':
-                                                    //       DateTime.now(),
-                                                    //   'date': today,
-                                                    //   'content':
-                                                    //       'Votre sortie a été refusé.',
-                                                    //   'isRead': false,
-                                                    // });
-                                                    case ('entréAM'):
-                                                    // FirebaseFirestore.instance
-                                                    //     .collection(
-                                                    //         'Notification')
-                                                    //     .doc(data['id'])
-                                                    //     .update({
-                                                    //   'validé': true,
-                                                    //   'isRead': true
-                                                    // });
-                                                    // FirebaseFirestore.instance
-                                                    //     .collection(
-                                                    //         'Attendance')
-                                                    //     .doc(data[
-                                                    //         'attendanceId'])
-                                                    //     .update({
-                                                    //   'sent': false,
-                                                    //   'entréAM': ''
-                                                    // });
-                                                    // FirebaseFirestore.instance
-                                                    //     .collection(
-                                                    //         'UserNotification')
-                                                    //     .doc(id)
-                                                    //     .set({
-                                                    //   'id': id,
-                                                    //   'userID':
-                                                    //       data['userID'],
-                                                    //   'timestamp':
-                                                    //       DateTime.now(),
-                                                    //   'date': today,
-                                                    //   'content':
-                                                    //       'Votre pointage a été refusé.',
-                                                    //   'isRead': false,
-                                                    // });
-                                                    case ('sortieAM'):
-                                                    // FirebaseFirestore.instance
-                                                    //     .collection(
-                                                    //         'Notification')
-                                                    //     .doc(data['id'])
-                                                    //     .update({
-                                                    //   'validé': true,
-                                                    //   'isRead': true
-                                                    // });
-                                                    // FirebaseFirestore.instance
-                                                    //     .collection(
-                                                    //         'Attendance')
-                                                    //     .doc(data[
-                                                    //         'attendanceId'])
-                                                    //     .update({
-                                                    //   'shiftAM': '',
-                                                    //   'sortieAM': '',
-                                                    //   'sent': false,
-                                                    //   'tardinessAM': '',
-                                                    //   'prod': '',
-                                                    //   'retard': ''
-                                                    // });
-                                                    // FirebaseFirestore.instance
-                                                    //     .collection(
-                                                    //         'UserNotification')
-                                                    //     .doc(id)
-                                                    //     .set({
-                                                    //   'id': id,
-                                                    //   'userID':
-                                                    //       data['userID'],
-                                                    //   'timestamp':
-                                                    //       DateTime.now(),
-                                                    //   'date': today,
-                                                    //   'content':
-                                                    //       'Votre sortie a été refusé.',
-                                                    //   'isRead': false,
-                                                    // });
-                                                  }
-                                                },
-                                                child: Text(
-                                                  'Modifier',
-                                                  style: TextStyle(
-                                                      fontSize:
-                                                          size.height * 0.02),
-                                                ))
+                                                        } else {
+                                                          FirebaseFirestore
+                                                              .instance
+                                                              .collection(
+                                                                  'UserNotification')
+                                                              .doc(id)
+                                                              .set({
+                                                            'id': id,
+                                                            'userID':
+                                                                data['userID'],
+                                                            'timestamp':
+                                                                DateTime.now(),
+                                                            'date': today,
+                                                            'content':
+                                                                'Votre sortie a été validé.',
+                                                            'isRead': false,
+                                                          });
+                                                        }
+                                                      },
+                                                      child: Text(
+                                                        'Valider',
+                                                        style: TextStyle(
+                                                            fontSize:
+                                                                size.height *
+                                                                    0.02),
+                                                      )),
+                                                ),
+                                                SizedBox(
+                                                  width: size.width * 0.3,
+                                                  child: ElevatedButton(
+                                                      style: const ButtonStyle(
+                                                        side: WidgetStatePropertyAll(
+                                                            BorderSide(
+                                                                color: Color
+                                                                    .fromARGB(
+                                                                        255,
+                                                                        30,
+                                                                        60,
+                                                                        100))),
+                                                        shape: WidgetStatePropertyAll(
+                                                            RoundedRectangleBorder(
+                                                                borderRadius: BorderRadius
+                                                                    .all(Radius
+                                                                        .circular(
+                                                                            15)))),
+                                                        foregroundColor:
+                                                            WidgetStatePropertyAll(
+                                                                Color.fromARGB(
+                                                                    255,
+                                                                    30,
+                                                                    60,
+                                                                    100)),
+                                                      ),
+                                                      onPressed: () async {
+                                                        setState(() {
+                                                          modifyPressed =
+                                                              !modifyPressed;
+                                                          pickedTime = null;
+                                                          formattedTime = "";
+                                                        });
+                                                      },
+                                                      child: Text(
+                                                        modifyPressed == false
+                                                            ? 'Modifier'
+                                                            : 'Annuler',
+                                                        style: TextStyle(
+                                                            fontSize:
+                                                                size.height *
+                                                                    0.02),
+                                                      )),
+                                                )
+                                              ],
+                                            ),
+                                            modifyPressed == false
+                                                ? const SizedBox.shrink()
+                                                : SizedBox(
+                                                    width: size.width,
+                                                    height: size.height * 0.07,
+                                                    child: Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        TextButton(
+                                                            style:
+                                                                const ButtonStyle(
+                                                              side: WidgetStatePropertyAll(BorderSide(
+                                                                  color: Color
+                                                                      .fromARGB(
+                                                                          255,
+                                                                          30,
+                                                                          60,
+                                                                          100))),
+                                                              shape: WidgetStatePropertyAll(
+                                                                  RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.all(
+                                                                              Radius.circular(15)))),
+                                                              foregroundColor:
+                                                                  WidgetStatePropertyAll(
+                                                                      Color.fromARGB(
+                                                                          255,
+                                                                          30,
+                                                                          60,
+                                                                          100)),
+                                                            ),
+                                                            onPressed:
+                                                                () async {
+                                                              pickedTime =
+                                                                  await _selectTime(
+                                                                      context);
+                                                              setState(() {
+                                                                formattedTime =
+                                                                    _formatTimeOfDay(
+                                                                        pickedTime!);
+                                                              });
+                                                            },
+                                                            child: Text(
+                                                              formattedTime
+                                                                      .isEmpty
+                                                                  ? data['time']
+                                                                  : formattedTime,
+                                                              style: TextStyle(
+                                                                  fontSize:
+                                                                      size.height *
+                                                                          0.02),
+                                                            )),
+                                                        SizedBox(
+                                                            width: size.width *
+                                                                0.05),
+                                                        formattedTime.isNotEmpty
+                                                            ? IconButton(
+                                                                style: const ButtonStyle(
+                                                                    foregroundColor:
+                                                                        WidgetStatePropertyAll(Colors
+                                                                            .white),
+                                                                    backgroundColor:
+                                                                        WidgetStatePropertyAll(Colors
+                                                                            .green)),
+                                                                onPressed:
+                                                                    () async {
+                                                                  final Map<
+                                                                          String,
+                                                                          dynamic>
+                                                                      doc =
+                                                                      await getAtt(
+                                                                          data[
+                                                                              'attendanceId']);
+                                                                  final String
+                                                                      id =
+                                                                      generateId();
+                                                                  switch (data[
+                                                                      'type']) {
+                                                                    case ('entréMatin'):
+                                                                      FirebaseFirestore
+                                                                          .instance
+                                                                          .collection(
+                                                                              'Notification')
+                                                                          .doc(data[
+                                                                              'id'])
+                                                                          .update({
+                                                                        'validé':
+                                                                            true,
+                                                                        'isRead':
+                                                                            true
+                                                                      });
+                                                                      FirebaseFirestore
+                                                                          .instance
+                                                                          .collection(
+                                                                              'Attendance')
+                                                                          .doc(data[
+                                                                              'attendanceId'])
+                                                                          .update({
+                                                                        'entréMatin':
+                                                                            formattedTime,
+                                                                        'sent':
+                                                                            false
+                                                                      });
+                                                                      FirebaseFirestore
+                                                                          .instance
+                                                                          .collection(
+                                                                              'UserNotification')
+                                                                          .doc(
+                                                                              id)
+                                                                          .set({
+                                                                        'id':
+                                                                            id,
+                                                                        'userID':
+                                                                            data['userID'],
+                                                                        'timestamp':
+                                                                            DateTime.now(),
+                                                                        'date':
+                                                                            today,
+                                                                        'content':
+                                                                            'Votre pointage a été modifé : "$formattedTime".',
+                                                                        'isRead':
+                                                                            false,
+                                                                      });
+                                                                    case ('sortieMatin'):
+                                                                      FirebaseFirestore
+                                                                          .instance
+                                                                          .collection(
+                                                                              'Attendance')
+                                                                          .doc(data[
+                                                                              'attendanceId'])
+                                                                          .update({
+                                                                        'shiftMatin': calculateDuration(
+                                                                            doc['entréMatin'],
+                                                                            formattedTime),
+                                                                        'sortieMatin':
+                                                                            formattedTime,
+                                                                        'sent':
+                                                                            true,
+                                                                        'tardinessMatin': _calculateTardiness(
+                                                                            doc['entréMatin'],
+                                                                            formattedTime,
+                                                                            'Matin')
+                                                                      });
+                                                                      FirebaseFirestore
+                                                                          .instance
+                                                                          .collection(
+                                                                              'Notification')
+                                                                          .doc(data[
+                                                                              'id'])
+                                                                          .update({
+                                                                        'validé':
+                                                                            true,
+                                                                        'isRead':
+                                                                            true
+                                                                      });
+                                                                      FirebaseFirestore
+                                                                          .instance
+                                                                          .collection(
+                                                                              'UserNotification')
+                                                                          .doc(
+                                                                              id)
+                                                                          .set({
+                                                                        'id':
+                                                                            id,
+                                                                        'userID':
+                                                                            data['userID'],
+                                                                        'timestamp':
+                                                                            DateTime.now(),
+                                                                        'date':
+                                                                            today,
+                                                                        'content':
+                                                                            'Votre pointage a été modifé : "$formattedTime".',
+                                                                        'isRead':
+                                                                            false,
+                                                                      });
+                                                                    case ('entréAM'):
+                                                                    FirebaseFirestore
+                                                                          .instance
+                                                                          .collection(
+                                                                              'Notification')
+                                                                          .doc(data[
+                                                                              'id'])
+                                                                          .update({
+                                                                        'validé':
+                                                                            true,
+                                                                        'isRead':
+                                                                            true
+                                                                      });
+                                                                      FirebaseFirestore
+                                                                          .instance
+                                                                          .collection(
+                                                                              'Attendance')
+                                                                          .doc(data[
+                                                                              'attendanceId'])
+                                                                          .update({
+                                                                        'entréAM':
+                                                                            formattedTime,
+                                                                        'sent':
+                                                                            false
+                                                                      });
+                                                                      FirebaseFirestore
+                                                                          .instance
+                                                                          .collection(
+                                                                              'UserNotification')
+                                                                          .doc(
+                                                                              id)
+                                                                          .set({
+                                                                        'id':
+                                                                            id,
+                                                                        'userID':
+                                                                            data['userID'],
+                                                                        'timestamp':
+                                                                            DateTime.now(),
+                                                                        'date':
+                                                                            today,
+                                                                        'content':
+                                                                            'Votre pointage a été modifé : "$formattedTime".',
+                                                                        'isRead':
+                                                                            false,
+                                                                      });
+                                                                    case ('sortieAM'):
+                                                                  }
+                                                                },
+                                                                icon: const Icon(
+                                                                    Icons
+                                                                        .check))
+                                                            : const SizedBox
+                                                                .shrink(),
+                                                      ],
+                                                    ),
+                                                  )
                                           ],
                                         ),
                                       )
@@ -1113,5 +1173,74 @@ class NotificationsState extends State<Notifications> {
                     });
               }
             }));
+  }
+
+  String sumDurations(String duration1, String duration2) {
+    // Parse the first duration
+    List<String> parts1 = duration1.split(' ');
+    int hours1 = int.parse(parts1[0].replaceAll('H', ''));
+    int minutes1 = int.parse(parts1[1].replaceAll('m', ''));
+
+    // Parse the second duration
+    List<String> parts2 = duration2.split(' ');
+    int hours2 = int.parse(parts2[0].replaceAll('H', ''));
+    int minutes2 = int.parse(parts2[1].replaceAll('m', ''));
+
+    // Calculate total hours and minutes
+    int totalMinutes = (hours1 * 60 + minutes1) + (hours2 * 60 + minutes2);
+    int totalHours = totalMinutes ~/ 60;
+    int remainingMinutes = totalMinutes % 60;
+
+    // Return the sum of durations in '0H 0m' format
+    return '${totalHours}H ${remainingMinutes}m';
+  }
+
+  String _calculateTardiness(String entryTime, String exitTime, String shift) {
+    final entry = DateFormat('HH:mm').parse(entryTime);
+    final exit = DateFormat('HH:mm').parse(exitTime);
+
+    Duration tardiness;
+    if (shift == 'Matin') {
+      final shiftStart = DateTime(entry.year, entry.month, entry.day, 9, 0);
+      final shiftEnd = DateTime(entry.year, entry.month, entry.day, 13, 0);
+
+      tardiness = shiftEnd.difference(entry) - exit.difference(shiftStart);
+    } else {
+      final shiftStart = DateTime(entry.year, entry.month, entry.day, 14, 0);
+      final shiftEnd = DateTime(entry.year, entry.month, entry.day, 18, 0);
+
+      tardiness = shiftEnd.difference(entry) - exit.difference(shiftStart);
+    }
+    return _durationToString(tardiness);
+  }
+
+  String _durationToString(Duration duration) {
+    int hours = duration.inHours * (-1);
+    int minutes = duration.inMinutes.remainder(60) * (-1);
+
+    return '${hours}H ${minutes}m';
+  }
+
+  String calculateDailyTardiness(String recordedDuration) {
+    // Split the recorded duration into hours and minutes
+    List<String> parts = recordedDuration.split(' ');
+    int recordedHours = int.parse(parts[0].replaceAll('H', ''));
+    int recordedMinutes = int.parse(parts[1].replaceAll('m', ''));
+
+    // Convert recorded duration to minutes
+    int recordedTotalMinutes = (recordedHours * 60) + recordedMinutes;
+
+    // Define the normal work duration in minutes (8 hours)
+    int normalWorkDurationMinutes = 8 * 60;
+
+    // Calculate the tardiness in minutes
+    int tardinessMinutes = normalWorkDurationMinutes - recordedTotalMinutes;
+
+    // Convert tardiness back to hours and minutes
+    int tardinessHours = tardinessMinutes ~/ 60;
+    int tardinessRemainingMinutes = tardinessMinutes % 60;
+
+    // Return the tardiness as a string in '0H 0m' format
+    return '${tardinessHours}H ${tardinessRemainingMinutes}m';
   }
 }
