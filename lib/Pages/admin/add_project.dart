@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -65,34 +66,53 @@ class AddProjectState extends State<AddProject> {
         throw Exception('Upload failed with state: ${snapshot.state}');
       }
     } catch (e) {
+      // ignore: avoid_print
       print('Error uploading image: $e');
       throw Exception('Error uploading image: $e');
     }
   }
 
+  String generateId() {
+    final random = Random();
+    const chars =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const length = 20;
+
+    return String.fromCharCodes(Iterable.generate(
+        length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
+  }
+
   void _addProject() async {
+    final String id = generateId();
     if (_formKey.currentState!.validate()) {
       try {
         String imageUrl = '';
         if (_imageFile != null) {
           imageUrl = await _uploadImage(_imageFile!);
         }
-
-        FirebaseFirestore.instance.collection('Projects').add({
-          'title': _titleController.text,
-          'description': _descriptionController.text,
-          'employees': selectedEmployees,
-          'imageUrl': imageUrl,
-        }).then((_) {
+        if (imageUrl.isNotEmpty) {
+          FirebaseFirestore.instance.collection('Projects').doc(id).set({
+            'id': id,
+            'title': _titleController.text,
+            'description': _descriptionController.text,
+            'employees': selectedEmployees,
+            'imageUrl': imageUrl,
+          }).then((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Projet ajouté avec succès')),
+            );
+            Navigator.pop(context);
+          }).catchError((error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Erreur lors de l\'ajout du projet')),
+            );
+          });
+        } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Projet ajouté avec succès')),
+            const SnackBar(content: Text('Veuillez séléctionnez une image')),
           );
-          Navigator.pop(context);
-        }).catchError((error) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Erreur lors de l\'ajout du projet')),
-          );
-        });
+        }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Erreur lors de l\'ajout du projet')),
@@ -141,6 +161,7 @@ class AddProjectState extends State<AddProject> {
                 ),
                 SizedBox(height: size.height * 0.04),
                 TextFormField(
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
                     hintText: 'Titre',
                     hintStyle: TextStyle(fontSize: size.width * 0.05),
@@ -155,6 +176,7 @@ class AddProjectState extends State<AddProject> {
                 ),
                 SizedBox(height: size.height * 0.04),
                 TextFormField(
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
                     hintText: 'Description',
                     hintStyle: TextStyle(fontSize: size.width * 0.05),

@@ -71,20 +71,6 @@ class _DailyAttendanceState extends State<DailyAttendance> {
     return 'Invalid Duration';
   }
 
-  int _parseDuration(String duration) {
-    final regex = RegExp(r'(\d+)H (\d+)m');
-    final match = regex.firstMatch(duration);
-
-    if (match != null) {
-      final hours = int.parse(match.group(1)!);
-      final minutes = int.parse(match.group(2)!);
-      return hours * 60 + minutes;
-    }
-
-    // Fallback if the format doesn't match
-    return 0;
-  }
-
   String calculateDuration(String startTime, String endTime) {
     // Parse the input time strings into DateTime objects
     DateTime start = DateTime.parse('2000-01-01 $startTime:00');

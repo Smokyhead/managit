@@ -66,9 +66,9 @@ class _ProjectsState extends State<Projects> {
                 itemBuilder: (context, index) {
                   final projectData =
                       docs[index].data() as Map<String, dynamic>;
-                  final projectId = docs[index].id;
 
                   return ListTile(
+                    leading: Image.network(projectData['imageUrl']),
                     title: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -87,7 +87,7 @@ class _ProjectsState extends State<Projects> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => Scaffold(),
+                            builder: (context) => const Scaffold(),
                           ),
                         );
                       },

@@ -442,11 +442,10 @@ class NotificationsState extends State<Notifications> {
                                                                         'sortieMatin':
                                                                             formattedTime,
                                                                         'sent':
-                                                                            true,
-                                                                        'tardinessMatin': _calculateTardiness(
+                                                                            false,
+                                                                        'tardinessMatin': calculateTardiness(calculateDuration(
                                                                             doc['entréMatin'],
-                                                                            formattedTime,
-                                                                            'Matin')
+                                                                            formattedTime))
                                                                       });
                                                                       FirebaseFirestore
                                                                           .instance
@@ -481,7 +480,7 @@ class NotificationsState extends State<Notifications> {
                                                                             false,
                                                                       });
                                                                     case ('entréAM'):
-                                                                    FirebaseFirestore
+                                                                      FirebaseFirestore
                                                                           .instance
                                                                           .collection(
                                                                               'Notification')
@@ -526,6 +525,66 @@ class NotificationsState extends State<Notifications> {
                                                                             false,
                                                                       });
                                                                     case ('sortieAM'):
+                                                                      FirebaseFirestore
+                                                                          .instance
+                                                                          .collection(
+                                                                              'Notification')
+                                                                          .doc(data[
+                                                                              'id'])
+                                                                          .update({
+                                                                        'validé':
+                                                                            true,
+                                                                        'isRead':
+                                                                            true
+                                                                      });
+                                                                      FirebaseFirestore
+                                                                          .instance
+                                                                          .collection(
+                                                                              'UserNotification')
+                                                                          .doc(
+                                                                              id)
+                                                                          .set({
+                                                                        'id':
+                                                                            id,
+                                                                        'userID':
+                                                                            data['userID'],
+                                                                        'timestamp':
+                                                                            DateTime.now(),
+                                                                        'date':
+                                                                            today,
+                                                                        'content':
+                                                                            'Votre pointage a été modifé : "$formattedTime".',
+                                                                        'isRead':
+                                                                            false,
+                                                                      });
+                                                                      FirebaseFirestore
+                                                                          .instance
+                                                                          .collection(
+                                                                              'Attendance')
+                                                                          .doc(data[
+                                                                              'attendanceId'])
+                                                                          .update({
+                                                                        'retard': calculateDailyTardiness(sumDurations(
+                                                                            doc[
+                                                                                'shiftMatin'],
+                                                                            calculateDuration(doc['entréAM'],
+                                                                                formattedTime))),
+                                                                        'prod': sumDurations(
+                                                                            doc[
+                                                                                'shiftMatin'],
+                                                                            calculateDuration(doc['entréAM'],
+                                                                                formattedTime)),
+                                                                        'shiftAM': calculateDuration(
+                                                                            doc['entréAM'],
+                                                                            formattedTime),
+                                                                        'sortieAM':
+                                                                            formattedTime,
+                                                                        'sent':
+                                                                            false,
+                                                                        'tardinessAM': calculateTardiness(calculateDuration(
+                                                                            doc['entréAM'],
+                                                                            formattedTime))
+                                                                      });
                                                                   }
                                                                 },
                                                                 icon: const Icon(
@@ -584,7 +643,7 @@ class NotificationsState extends State<Notifications> {
                                   builder: (BuildContext context) {
                                     return SizedBox(
                                       width: size.width,
-                                      height: size.height * 0.35,
+                                      height: size.height * 0.4,
                                       child: Padding(
                                         padding:
                                             EdgeInsets.all(size.width * 0.05),
@@ -607,12 +666,16 @@ class NotificationsState extends State<Notifications> {
                                               mainAxisAlignment:
                                                   MainAxisAlignment.start,
                                               children: [
+                                                Text(data['type'],
+                                                    style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600)),
                                                 Text(data['user'],
                                                     style: const TextStyle(
                                                         fontWeight:
                                                             FontWeight.w600)),
                                                 SizedBox(
-                                                  height: size.height * 0.03,
+                                                  height: size.height * 0.01,
                                                 ),
                                                 data['days'] == 1
                                                     ? Column(
@@ -662,6 +725,14 @@ class NotificationsState extends State<Notifications> {
                                                           ],
                                                         ),
                                                       ),
+                                                SizedBox(
+                                                  height: size.height * 0.01,
+                                                ),
+                                                Text(data['reason'],
+                                                    maxLines: 3,
+                                                    style: TextStyle(
+                                                        fontSize: size.width *
+                                                            0.035)),
                                                 SizedBox(
                                                   height: size.height * 0.02,
                                                 ),
@@ -748,19 +819,44 @@ class NotificationsState extends State<Notifications> {
                                                                   'status':
                                                                       'approved'
                                                                 });
-                                                                FirebaseFirestore
-                                                                    .instance
-                                                                    .collection(
-                                                                        'User')
-                                                                    .doc(data[
-                                                                        'userID'])
-                                                                    .update({
-                                                                  'Solde congé':
-                                                                      userdata![
-                                                                              'Solde congé'] -
-                                                                          data[
-                                                                              'days']
-                                                                });
+                                                                if (userdata![
+                                                                        'resteConge'] >=
+                                                                    data[
+                                                                        'days']) {
+                                                                  FirebaseFirestore
+                                                                      .instance
+                                                                      .collection(
+                                                                          'User')
+                                                                      .doc(data[
+                                                                          'userID'])
+                                                                      .update({
+                                                                    'Congé pris':
+                                                                        userdata['Congé pris'] +
+                                                                            data['days'],
+                                                                    'resteConge':
+                                                                        userdata['resteConge'] -
+                                                                            data['days']
+                                                                  });
+                                                                } else {
+                                                                  FirebaseFirestore
+                                                                      .instance
+                                                                      .collection(
+                                                                          'User')
+                                                                      .doc(data[
+                                                                          'userID'])
+                                                                      .update({
+                                                                    'Congé pris':
+                                                                        userdata['Congé pris'] +
+                                                                            data['days'],
+                                                                    'Reste congé':
+                                                                        0,
+                                                                    'Solde congé année prec': userdata[
+                                                                            'Solde congé année prec'] -
+                                                                        (data['days'] -
+                                                                            userdata['Reste congé'])
+                                                                  });
+                                                                }
+
                                                                 Navigator.of(
                                                                     // ignore: use_build_context_synchronously
                                                                     context).pop();
@@ -889,7 +985,7 @@ class NotificationsState extends State<Notifications> {
                                   builder: (BuildContext context) {
                                     return SizedBox(
                                       width: size.width,
-                                      height: size.height * 0.4,
+                                      height: size.height * 0.45,
                                       child: Padding(
                                         padding:
                                             EdgeInsets.all(size.width * 0.05),
@@ -949,7 +1045,17 @@ class NotificationsState extends State<Notifications> {
                                                           style: TextStyle(
                                                               fontSize:
                                                                   size.width *
-                                                                      0.05))
+                                                                      0.05)),
+                                                      SizedBox(
+                                                        height:
+                                                            size.height * 0.01,
+                                                      ),
+                                                      Text(data['reason'],
+                                                          maxLines: 3,
+                                                          style: TextStyle(
+                                                              fontSize:
+                                                                  size.width *
+                                                                      0.035)),
                                                     ],
                                                   ),
                                                 ),
@@ -1001,7 +1107,7 @@ class NotificationsState extends State<Notifications> {
                                                                     (data['hours'] /
                                                                         8) as double;
                                                                 if (b - b.truncate() <
-                                                                    0.6) {
+                                                                    0.5) {
                                                                   a = b
                                                                       .truncate();
                                                                 } else {
@@ -1018,7 +1124,7 @@ class NotificationsState extends State<Notifications> {
                                                                           'Sanctions'] +
                                                                       (data['hours'] /
                                                                           8),
-                                                                  'Solde congé': userdata[
+                                                                  'resteConge': userdata[
                                                                           'Solde congé'] +
                                                                       userdata[
                                                                           'Solde congé année prec'] -
@@ -1176,71 +1282,49 @@ class NotificationsState extends State<Notifications> {
   }
 
   String sumDurations(String duration1, String duration2) {
-    // Parse the first duration
     List<String> parts1 = duration1.split(' ');
     int hours1 = int.parse(parts1[0].replaceAll('H', ''));
     int minutes1 = int.parse(parts1[1].replaceAll('m', ''));
-
-    // Parse the second duration
     List<String> parts2 = duration2.split(' ');
     int hours2 = int.parse(parts2[0].replaceAll('H', ''));
     int minutes2 = int.parse(parts2[1].replaceAll('m', ''));
-
-    // Calculate total hours and minutes
     int totalMinutes = (hours1 * 60 + minutes1) + (hours2 * 60 + minutes2);
     int totalHours = totalMinutes ~/ 60;
     int remainingMinutes = totalMinutes % 60;
-
-    // Return the sum of durations in '0H 0m' format
     return '${totalHours}H ${remainingMinutes}m';
   }
 
-  String _calculateTardiness(String entryTime, String exitTime, String shift) {
-    final entry = DateFormat('HH:mm').parse(entryTime);
-    final exit = DateFormat('HH:mm').parse(exitTime);
+  String calculateTardiness(String duration) {
+    final regExp = RegExp(r'(\d+)H (\d+)m');
+    final match = regExp.firstMatch(duration);
 
-    Duration tardiness;
-    if (shift == 'Matin') {
-      final shiftStart = DateTime(entry.year, entry.month, entry.day, 9, 0);
-      final shiftEnd = DateTime(entry.year, entry.month, entry.day, 13, 0);
-
-      tardiness = shiftEnd.difference(entry) - exit.difference(shiftStart);
-    } else {
-      final shiftStart = DateTime(entry.year, entry.month, entry.day, 14, 0);
-      final shiftEnd = DateTime(entry.year, entry.month, entry.day, 18, 0);
-
-      tardiness = shiftEnd.difference(entry) - exit.difference(shiftStart);
+    if (match == null) {
+      return 'Invalid format';
     }
-    return _durationToString(tardiness);
-  }
 
-  String _durationToString(Duration duration) {
-    int hours = duration.inHours * (-1);
-    int minutes = duration.inMinutes.remainder(60) * (-1);
+    int hours = int.parse(match.group(1)!);
+    int minutes = int.parse(match.group(2)!);
+    int totalMinutesGiven = hours * 60 + minutes;
+    int totalMinutesShift = 4 * 60;
+    int differenceInMinutes = totalMinutesShift - totalMinutesGiven;
+    if (differenceInMinutes <= 0) {
+      return '0H 0m';
+    }
+    int tardyHours = differenceInMinutes ~/ 60;
+    int tardyMinutes = differenceInMinutes % 60;
 
-    return '${hours}H ${minutes}m';
+    return '${tardyHours}H ${tardyMinutes}m';
   }
 
   String calculateDailyTardiness(String recordedDuration) {
-    // Split the recorded duration into hours and minutes
     List<String> parts = recordedDuration.split(' ');
     int recordedHours = int.parse(parts[0].replaceAll('H', ''));
     int recordedMinutes = int.parse(parts[1].replaceAll('m', ''));
-
-    // Convert recorded duration to minutes
     int recordedTotalMinutes = (recordedHours * 60) + recordedMinutes;
-
-    // Define the normal work duration in minutes (8 hours)
     int normalWorkDurationMinutes = 8 * 60;
-
-    // Calculate the tardiness in minutes
     int tardinessMinutes = normalWorkDurationMinutes - recordedTotalMinutes;
-
-    // Convert tardiness back to hours and minutes
     int tardinessHours = tardinessMinutes ~/ 60;
     int tardinessRemainingMinutes = tardinessMinutes % 60;
-
-    // Return the tardiness as a string in '0H 0m' format
     return '${tardinessHours}H ${tardinessRemainingMinutes}m';
   }
 }

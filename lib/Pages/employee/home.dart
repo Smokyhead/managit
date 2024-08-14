@@ -367,10 +367,8 @@ class _HomeState extends State<Home> {
                                               'sortieMatin': time,
                                               'sent': true,
                                               'tardinessMatin':
-                                                  _calculateTardiness(
-                                                      data['entréMatin'],
-                                                      time,
-                                                      'Matin')
+                                                  calculateTardiness(
+                                                      shift)
                                             });
                                             FirebaseFirestore.instance
                                                 .collection('Notification')
@@ -518,10 +516,8 @@ class _HomeState extends State<Home> {
                                               'sortieAM': time,
                                               'sent': true,
                                               'tardinessAM':
-                                                  _calculateTardiness(
-                                                      data['entréAM'],
-                                                      time,
-                                                      'AM')
+                                                  calculateTardiness(
+                                                      shift)
                                             });
                                             FirebaseFirestore.instance
                                                 .collection('Notification')
@@ -858,30 +854,26 @@ class _HomeState extends State<Home> {
     return '${totalHours}H ${remainingMinutes}m';
   }
 
-  String _calculateTardiness(String entryTime, String exitTime, String shift) {
-    final entry = DateFormat('HH:mm').parse(entryTime);
-    final exit = DateFormat('HH:mm').parse(exitTime);
+  String calculateTardiness(String duration) {
+    final regExp = RegExp(r'(\d+)H (\d+)m');
+    final match = regExp.firstMatch(duration);
 
-    Duration tardiness;
-    if (shift == 'Matin') {
-      final shiftStart = DateTime(entry.year, entry.month, entry.day, 9, 0);
-      final shiftEnd = DateTime(entry.year, entry.month, entry.day, 13, 0);
-
-      tardiness = shiftEnd.difference(entry) - exit.difference(shiftStart);
-    } else {
-      final shiftStart = DateTime(entry.year, entry.month, entry.day, 14, 0);
-      final shiftEnd = DateTime(entry.year, entry.month, entry.day, 18, 0);
-
-      tardiness = shiftEnd.difference(entry) - exit.difference(shiftStart);
+    if (match == null) {
+      return 'Invalid format';
     }
-    return _durationToString(tardiness);
-  }
 
-  String _durationToString(Duration duration) {
-    int hours = duration.inHours * (-1);
-    int minutes = duration.inMinutes.remainder(60) * (-1);
+    int hours = int.parse(match.group(1)!);
+    int minutes = int.parse(match.group(2)!);
+    int totalMinutesGiven = hours * 60 + minutes;
+    int totalMinutesShift = 4 * 60;
+    int differenceInMinutes = totalMinutesShift - totalMinutesGiven;
+    if (differenceInMinutes <= 0) {
+      return '0H 0m';
+    }
+    int tardyHours = differenceInMinutes ~/ 60;
+    int tardyMinutes = differenceInMinutes % 60;
 
-    return '${hours}H ${minutes}m';
+    return '${tardyHours}H ${tardyMinutes}m';
   }
 
   String calculateDailyTardiness(String recordedDuration) {

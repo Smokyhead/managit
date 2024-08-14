@@ -167,6 +167,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'user': '${_userData.nom} ${_userData.prenom}',
         'date': formattedDate,
         'days': 1,
+        'type': leaveType,
         'reason': reasonController.text,
         'isRead': false,
         'validé': false,
@@ -181,7 +182,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'days': 1,
         'status': 'pending', // Initial status can be pending
         'requestDate': DateTime.now(), // Date of the request
-        'reason': reasonController.text
+        'reason': reasonController.text,
+        'year': DateTime.now().year
       });
 
       print('Leave request saved successfully.');
@@ -225,6 +227,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'endDate': formattedDate2,
         'days': calculateBusinessDays(_selectedDate1!, _selectedDate2!),
         'reason': reasonController.text,
+        'type': leaveType,
         'isRead': false,
         'validé': false,
         'typeNot': 'leaveRequest',
@@ -239,7 +242,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
         'days': calculateBusinessDays(_selectedDate1!, _selectedDate2!),
         'reason': reasonController.text,
         'status': 'pending', // Initial status can be pending
-        'requestDate': Timestamp.now(), // Date of the request
+        'requestDate': Timestamp.now(),
+        'year': DateTime.now().year // Date of the request
       });
 
       print('Leave request saved successfully.');
@@ -630,7 +634,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                 TextFormField(
                   textCapitalization: TextCapitalization.sentences,
                   controller: reasonController,
-                  maxLines: 5,
+                  maxLines: 3,
                   decoration: InputDecoration(
                     enabledBorder: OutlineInputBorder(
                       borderSide: const BorderSide(

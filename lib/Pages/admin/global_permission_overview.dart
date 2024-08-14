@@ -200,10 +200,6 @@ class _GlobalPermissionOverviewState extends State<GlobalPermissionOverview> {
                                         color: const Color.fromARGB(
                                             255, 30, 60, 100))),
                                 child: ListTile(
-                                  onTap: () {
-                                    print(_selectedId);
-                                    print(_selectedYear);
-                                  },
                                   title: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
