@@ -73,11 +73,13 @@ class _ProjectsState extends State<Projects> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          projectData['title'] ?? 'No Title',
-                          style: TextStyle(fontSize: size.width * 0.05, fontWeight: FontWeight.bold),
+                          projectData['title'] ?? 'Titre',
+                          style: TextStyle(
+                              fontSize: size.width * 0.05,
+                              fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          projectData['description'] ?? 'No desc',
+                          projectData['description'] ?? 'Description',
                           style: TextStyle(fontSize: size.width * 0.04),
                         ),
                       ],
