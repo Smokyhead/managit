@@ -129,7 +129,7 @@ class AddProjectState extends State<AddProject> {
         backgroundColor: const Color.fromARGB(255, 30, 60, 100),
         foregroundColor: Colors.white,
         title: Text(
-          'Nouveau Projet',
+          'Nouveau projet',
           style: TextStyle(fontSize: size.width * 0.0475),
         ),
       ),
@@ -159,7 +159,18 @@ class AddProjectState extends State<AddProject> {
                           fit: BoxFit.cover,
                         ),
                 ),
-                SizedBox(height: size.height * 0.04),
+                SizedBox(height: size.height * 0.01),
+                TextButton(
+                    onPressed: () {
+                      setState(() {
+                        _imageFile = null;
+                      });
+                    },
+                    child: const Text(
+                      'Retirer l\'image',
+                      style: TextStyle(color: Colors.red),
+                    )),
+                SizedBox(height: size.height * 0.01),
                 TextFormField(
                   textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(

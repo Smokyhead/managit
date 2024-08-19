@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:managit/pages/admin/add_project.dart';
+import 'package:managit/pages/admin/edit_project.dart';
 
 class Projects extends StatefulWidget {
   const Projects({super.key});
@@ -89,7 +90,8 @@ class _ProjectsState extends State<Projects> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const Scaffold(),
+                            builder: (context) =>
+                                EditProject(id: projectData['id']),
                           ),
                         );
                       },
