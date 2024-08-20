@@ -19,8 +19,8 @@ class AddProjectState extends State<AddProject> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  List<String> selectedEmployees = [];
-  List<String> allEmployees = [];
+  List<Map<String, String>> allEmployees = [];
+  List<String> selectedEmployeeIds = [];
   File? _imageFile;
 
   @override
@@ -37,39 +37,21 @@ class AddProjectState extends State<AddProject> {
 
     setState(() {
       allEmployees = employeeSnapshot.docs.map((doc) {
-        return '${doc['Nom']} ${doc['Prénom']}';
+        return {
+          'id': doc.id, // Store the employee ID
+          'name': '${doc['Nom']} ${doc['Prénom']}' // Store the employee name
+        };
       }).toList();
     });
   }
 
-  Future<void> _pickImage() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-    }
-  }
-
   Future<String> _uploadImage(File imageFile) async {
-    try {
-      String fileName = 'projects/${DateTime.now().millisecondsSinceEpoch}.jpg';
-      Reference ref = FirebaseStorage.instance.ref().child(fileName);
-      UploadTask uploadTask = ref.putFile(imageFile);
-
-      TaskSnapshot snapshot = await uploadTask;
-      if (snapshot.state == TaskState.success) {
-        String downloadUrl = await snapshot.ref.getDownloadURL();
-        return downloadUrl;
-      } else {
-        throw Exception('Upload failed with state: ${snapshot.state}');
-      }
-    } catch (e) {
-      // ignore: avoid_print
-      print('Error uploading image: $e');
-      throw Exception('Error uploading image: $e');
-    }
+    String fileName = 'projects/${DateTime.now().millisecondsSinceEpoch}.jpg';
+    Reference ref = FirebaseStorage.instance.ref().child(fileName);
+    UploadTask uploadTask = ref.putFile(imageFile);
+    TaskSnapshot snapshot = await uploadTask;
+    String downloadUrl = await snapshot.ref.getDownloadURL();
+    return downloadUrl;
   }
 
   String generateId() {
@@ -91,23 +73,30 @@ class AddProjectState extends State<AddProject> {
           imageUrl = await _uploadImage(_imageFile!);
         }
         if (imageUrl.isNotEmpty) {
-          FirebaseFirestore.instance.collection('Projects').doc(id).set({
+          // Add the project to the Projects collection
+          await FirebaseFirestore.instance.collection('Projects').doc(id).set({
             'id': id,
             'title': _titleController.text,
             'description': _descriptionController.text,
-            'employees': selectedEmployees,
+            'employees': selectedEmployeeIds, // Store employee IDs
             'imageUrl': imageUrl,
-          }).then((_) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Projet ajouté avec succès')),
-            );
-            Navigator.pop(context);
-          }).catchError((error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content: Text('Erreur lors de l\'ajout du projet')),
-            );
           });
+
+          // Add the project ID to each selected employee's project list
+          for (String employeeId in selectedEmployeeIds) {
+            DocumentReference userDocRef =
+                FirebaseFirestore.instance.collection('User').doc(employeeId);
+
+            // Update the projects list for the employee
+            await userDocRef.update({
+              'projects': FieldValue.arrayUnion([id]),
+            });
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Projet ajouté avec succès')),
+          );
+          Navigator.pop(context);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Veuillez séléctionnez une image')),
@@ -118,6 +107,16 @@ class AddProjectState extends State<AddProject> {
           const SnackBar(content: Text('Erreur lors de l\'ajout du projet')),
         );
       }
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
     }
   }
 
@@ -206,17 +205,18 @@ class AddProjectState extends State<AddProject> {
                     hintText: 'Sélectionner des employés',
                     hintStyle: TextStyle(fontSize: size.width * 0.05),
                   ),
-                  items: allEmployees.map((String employee) {
+                  items: allEmployees.map((Map<String, String> employee) {
                     return DropdownMenuItem<String>(
-                      value: employee,
-                      child: Text(employee),
+                      value: employee['id'], // Store the employee ID
+                      child:
+                          Text(employee['name']!), // Display the employee name
                     );
                   }).toList(),
                   onChanged: (String? newValue) {
                     if (newValue != null &&
-                        !selectedEmployees.contains(newValue)) {
+                        !selectedEmployeeIds.contains(newValue)) {
                       setState(() {
-                        selectedEmployees.add(newValue);
+                        selectedEmployeeIds.add(newValue);
                       });
                     }
                   },
@@ -225,12 +225,15 @@ class AddProjectState extends State<AddProject> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 4,
-                  children: selectedEmployees.map((employee) {
+                  children: selectedEmployeeIds.map((id) {
+                    // Find the corresponding employee name from the list
+                    String employeeName = allEmployees.firstWhere(
+                        (employee) => employee['id'] == id)['name']!;
                     return Chip(
-                      label: Text(employee),
+                      label: Text(employeeName),
                       onDeleted: () {
                         setState(() {
-                          selectedEmployees.remove(employee);
+                          selectedEmployeeIds.remove(id);
                         });
                       },
                     );
@@ -244,11 +247,11 @@ class AddProjectState extends State<AddProject> {
                   child: TextButton(
                     onPressed: _addProject,
                     style: ButtonStyle(
-                      elevation: WidgetStateProperty.all(10),
-                      backgroundColor: WidgetStateProperty.all(
+                      elevation: MaterialStateProperty.all(10),
+                      backgroundColor: MaterialStateProperty.all(
                           const Color.fromARGB(255, 30, 60, 100)),
-                      foregroundColor: WidgetStateProperty.all(Colors.white),
-                      shape: WidgetStateProperty.all(
+                      foregroundColor: MaterialStateProperty.all(Colors.white),
+                      shape: MaterialStateProperty.all(
                         RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20)),
                       ),
