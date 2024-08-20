@@ -135,7 +135,7 @@ class _PenaltyManagementState extends State<PenaltyManagement> {
 
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Penalty assigned successfully')),
+        const SnackBar(content: Text('Succés')),
       );
 
       // Clear form
