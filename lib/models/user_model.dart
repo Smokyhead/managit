@@ -8,6 +8,7 @@ class UserData {
   int congePris = 0;
   double sanctions = 0;
   int soldeAnneePrec = 0;
+  int resteConge = 0;
 
   void fromMap(Map<String, dynamic> data) {
     id = data['id'] ?? '';
@@ -18,6 +19,7 @@ class UserData {
     soldeConge = data['Solde congé'] ?? 0;
     congePris = data['Congé pris'] ?? 0;
     sanctions = data['Sanctions'] ?? 0;
+    resteConge = data['resteConge'] ?? 0;
     soldeAnneePrec = data['Solde congé année prec'] ?? 0;
   }
 }

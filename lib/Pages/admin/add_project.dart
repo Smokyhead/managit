@@ -247,11 +247,11 @@ class AddProjectState extends State<AddProject> {
                   child: TextButton(
                     onPressed: _addProject,
                     style: ButtonStyle(
-                      elevation: MaterialStateProperty.all(10),
-                      backgroundColor: MaterialStateProperty.all(
+                      elevation: WidgetStateProperty.all(10),
+                      backgroundColor: WidgetStateProperty.all(
                           const Color.fromARGB(255, 30, 60, 100)),
-                      foregroundColor: MaterialStateProperty.all(Colors.white),
-                      shape: MaterialStateProperty.all(
+                      foregroundColor: WidgetStateProperty.all(Colors.white),
+                      shape: WidgetStateProperty.all(
                         RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20)),
                       ),

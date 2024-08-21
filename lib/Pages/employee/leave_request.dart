@@ -675,7 +675,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                    'Les congés ne peuvent pas être demandées pour le week-end ou les jours feriés'),
+                                    'Les congés ne peuvent pas être demandées pour le week-end ou les jours feriés.'),
                               ),
                             );
                           } else {
@@ -687,14 +687,14 @@ class _LeaveRequestState extends State<LeaveRequest> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
-                                      'Demande de congé soumise avec succès'),
+                                      'Demande de congé soumise avec succès.'),
                                 ),
                               );
                               Navigator.of(context).pop();
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Solde insuffisant'),
+                                  content: Text('Solde insuffisant.'),
                                 ),
                               );
                             }

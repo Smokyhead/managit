@@ -24,7 +24,6 @@ class _PermissionRequestState extends State<PermissionRequest> {
   DateTime? _selectedDate;
   String formattedDate = "";
   final User? _user = FirebaseAuth.instance.currentUser;
-  // ignore: unused_field
   late UserData _userData;
   int nhours = 0;
   String? selectedStartTime;
@@ -466,18 +465,26 @@ class _PermissionRequestState extends State<PermissionRequest> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
-                                        'Les autorisations ne peuvent pas être demandées pour les jours feriés'),
+                                        'Les autorisations ne peuvent pas être demandées pour les jours feriés.'),
                                   ),
                                 );
                               } else {
-                                onSubmitPermissionRequest();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        "Demande d'autorisation soumise avec succès"),
-                                  ),
-                                );
-                                Navigator.of(context).pop();
+                                if (_userData.resteConge - (nhours / 8) <= 0) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Solde insuffisant.'),
+                                    ),
+                                  );
+                                } else {
+                                  onSubmitPermissionRequest();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                          "Demande d'autorisation soumise avec succès."),
+                                    ),
+                                  );
+                                  Navigator.of(context).pop();
+                                }
                               }
                             }
                           },

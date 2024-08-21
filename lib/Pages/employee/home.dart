@@ -199,18 +199,15 @@ class _HomeState extends State<Home> {
                 padding: EdgeInsets.all(size.width * 0.05),
                 child: Column(
                   children: [
-                    Padding(
-                      padding:
-                          EdgeInsets.symmetric(vertical: size.height * 0.015),
-                      child: Center(
-                        child: Text(
-                          DateFormat('dd - MM - yyyy').format(DateTime.now()),
-                          style: TextStyle(
-                              fontWeight: FontWeight.w400,
-                              fontSize: size.width * 0.05),
-                        ),
+                    Center(
+                      child: Text(
+                        DateFormat('dd - MM - yyyy').format(DateTime.now()),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w400,
+                            fontSize: size.width * 0.05),
                       ),
                     ),
+                    SizedBox(height: size.height * 0.01),
                     StreamBuilder<QuerySnapshot>(
                         stream: FirebaseFirestore.instance
                             .collection('Attendance')
@@ -367,8 +364,7 @@ class _HomeState extends State<Home> {
                                               'sortieMatin': time,
                                               'sent': true,
                                               'tardinessMatin':
-                                                  calculateTardiness(
-                                                      shift)
+                                                  calculateTardiness(shift)
                                             });
                                             FirebaseFirestore.instance
                                                 .collection('Notification')
@@ -516,8 +512,7 @@ class _HomeState extends State<Home> {
                                               'sortieAM': time,
                                               'sent': true,
                                               'tardinessAM':
-                                                  calculateTardiness(
-                                                      shift)
+                                                  calculateTardiness(shift)
                                             });
                                             FirebaseFirestore.instance
                                                 .collection('Notification')
@@ -639,7 +634,7 @@ class _HomeState extends State<Home> {
                                           fontSize: size.width * 0.04),
                                     ),
                                     Text(
-                                      '${userData['Solde congé']}',
+                                      '${userData['Solde congé'].truncate()}',
                                       style: TextStyle(
                                           fontSize: size.width * 0.04,
                                           fontWeight: FontWeight.bold),
@@ -649,7 +644,7 @@ class _HomeState extends State<Home> {
                                 Row(
                                   children: [
                                     Text(
-                                      "Congés pris: ",
+                                      "Jours de congés pris: ",
                                       style: TextStyle(
                                           fontSize: size.width * 0.04),
                                     ),
