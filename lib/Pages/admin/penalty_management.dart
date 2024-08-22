@@ -1,12 +1,11 @@
 // ignore_for_file: avoid_print, use_build_context_synchronously
 
-import 'dart:math';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:iconly/iconly.dart';
-import 'package:intl/intl.dart';
-import 'package:managit/models/user_model.dart';
+import 'package:managit/pages/admin/add_penalty.dart';
 
 class PenaltyManagement extends StatefulWidget {
   const PenaltyManagement({super.key});
@@ -16,702 +15,242 @@ class PenaltyManagement extends StatefulWidget {
 }
 
 class _PenaltyManagementState extends State<PenaltyManagement> {
-  final String today = DateFormat('dd/MM/yyyy').format(DateTime.now());
-  String? month;
-  int? year;
-  final _formKey = GlobalKey<FormState>();
   String? _selectedEmployee;
-  List<String> types = ['Heure', 'Jour'];
-  String? _selectedType;
-  int hours = 0;
-  final dateContr = TextEditingController();
-  final dateContr1 = TextEditingController();
-  final dateContr2 = TextEditingController();
-  DateTime? _selectedDate;
-  DateTime? _selectedDate1;
-  DateTime? _selectedDate2;
-  String formattedDate = "";
-  String formattedDate1 = "";
-  String formattedDate2 = "";
-  final reasonController = TextEditingController();
-
-  List<Map<String, int>> tunisianHolidays = [
-    {'month': 1, 'day': 1}, // New Year's Day
-    {'month': 3, 'day': 20}, // Independence Day
-    {'month': 4, 'day': 9}, // Martyrs' Day
-    {'month': 5, 'day': 1}, // Labour Day
-    {'month': 7, 'day': 25}, // Republic Day
-    {'month': 10, 'day': 15}, // Evacuation Day
+  String? _selectedId;
+  int _selectedYear = DateTime.now().year;
+  String _selectedMonth = 'Janvier';
+  List<int> years = [2024, 2025, 2026];
+  List<String> months = [
+    'Janvier',
+    'Février',
+    'Mars',
+    'Avril',
+    'Mai',
+    'Juin',
+    'Juillet',
+    'Août',
+    'Septembre',
+    'Octobre',
+    'Novembre',
+    'Décembre'
   ];
 
-  int calculateDays(DateTime startDate, DateTime endDate) {
-    int days = 0;
-    DateTime currentDate = startDate;
-
-    while (currentDate.isBefore(endDate) ||
-        currentDate.isAtSameMomentAs(endDate)) {
-      if (!isWeekend(currentDate) && !isHoliday(currentDate)) {
-        days++;
-      }
-      currentDate = currentDate.add(const Duration(days: 1));
-    }
-
-    return days;
-  }
-
-  bool isHoliday(DateTime date) {
-    return tunisianHolidays.any((holiday) =>
-        holiday['day'] == date.day && holiday['month'] == date.month);
-  }
-
-  bool isWeekend(DateTime date) {
-    return date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
-  }
-
-  String generateId() {
-    final random = Random();
-    const chars =
-        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    const length = 20;
-
-    return String.fromCharCodes(Iterable.generate(
-        length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
+  @override
+  void initState() {
+    super.initState();
+    _selectedId = null;
   }
 
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('User')
-                    .where('role', isEqualTo: 'employee')
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-                  final employees = snapshot.data!.docs;
-                  return DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'Séléctionner un employé',
-                    ),
-                    items: employees.map((employee) {
-                      return DropdownMenuItem<String>(
-                        value: employee.id,
-                        child: Text('${employee['Nom']} ${employee['Prénom']}'),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedEmployee = value;
-                      });
-                    },
-                    validator: (value) => value == null
-                        ? 'Veuillez séléctionner un employé'
-                        : null,
-                  );
-                },
-              ),
-              SizedBox(height: size.height * 0.02),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Type',
-                ),
-                items: types.map((type) {
-                  return DropdownMenuItem<String>(
-                    value: type,
-                    child: Text(type),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedType = value!;
-                  });
-                },
-                validator: (value) =>
-                    value == null ? 'Veuillez séléctionner un employé' : null,
-              ),
-              SizedBox(height: size.height * 0.04),
-              _selectedType == 'Heure'
-                  ? Column(
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Date",
-                              style: TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.w600),
-                              textAlign: TextAlign.justify,
-                            ),
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: size.width * 0.4,
-                                  child: TextButton(
-                                    style: ButtonStyle(
-                                      side: WidgetStateProperty.all(
-                                          const BorderSide(
-                                              style: BorderStyle.solid,
-                                              color: Color.fromARGB(
-                                                  255, 30, 60, 100))),
-                                      elevation: WidgetStateProperty.all(6),
-                                      backgroundColor: WidgetStateProperty.all(
-                                          const Color.fromARGB(
-                                              255, 224, 227, 241)),
-                                      foregroundColor: WidgetStateProperty.all(
-                                          const Color.fromARGB(
-                                              255, 30, 60, 100)),
-                                      shape: WidgetStateProperty.all(
-                                        RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(15)),
-                                      ),
-                                    ),
-                                    onPressed: () async {
-                                      _selectedDate = await showDatePicker(
-                                        context: context,
-                                        firstDate: DateTime.now(),
-                                        lastDate: DateTime(2100),
-                                        initialDate:
-                                            _selectedDate ?? DateTime.now(),
-                                        currentDate: _selectedDate,
-                                      );
-                                      setState(() {
-                                        if (_selectedDate != null) {
-                                          formattedDate =
-                                              DateFormat('dd/MM/yyyy')
-                                                  .format(_selectedDate!);
-                                          dateContr.text = formattedDate;
-                                          year = _selectedDate!.year;
-                                          switch (_selectedDate!.month) {
-                                            case (1):
-                                              month = 'Janvier';
-                                            case (2):
-                                              month = 'Février';
-                                            case (3):
-                                              month = 'Mars';
-                                            case (4):
-                                              month = 'Avril';
-                                            case (5):
-                                              month = 'May';
-                                            case (6):
-                                              month = 'Juin';
-                                            case (7):
-                                              month = 'Juillet';
-                                            case (8):
-                                              month = 'Aôut';
-                                            case (9):
-                                              month = 'Septembre';
-                                            case (10):
-                                              month = 'Octobre';
-                                            case (11):
-                                              month = 'Novembre';
-                                            case (12):
-                                              month = 'Decembre';
-                                          }
-                                        }
-                                      });
-                                    },
-                                    child: Text(
-                                      formattedDate.isEmpty
-                                          ? "jj / mm / aaaa"
-                                          : formattedDate,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 18),
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      formattedDate = "";
-                                      _selectedDate = null;
-                                    });
-                                  },
-                                  icon: const Icon(
-                                    IconlyBold.delete,
-                                    color: Colors.red,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: size.height * 0.04),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              height: size.height * 0.08,
-                              width: size.height * 0.08,
-                              child: IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    hours--;
-                                  });
-                                },
-                                icon: const Icon(Icons.exposure_neg_1),
-                                style: ButtonStyle(
-                                    side: const WidgetStatePropertyAll(
-                                        BorderSide(
-                                            color: Color.fromARGB(
-                                                255, 30, 60, 100))),
-                                    backgroundColor:
-                                        const WidgetStatePropertyAll(
-                                            Color.fromARGB(255, 215, 230, 245)),
-                                    foregroundColor:
-                                        const WidgetStatePropertyAll(
-                                            Color.fromARGB(255, 30, 60, 100)),
-                                    shape: WidgetStatePropertyAll(
-                                        RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(15)))),
-                              ),
-                            ),
-                            SizedBox(width: size.width * 0.05),
-                            Text('$hours',
-                                style: TextStyle(
-                                    fontSize: size.width * 0.06,
-                                    fontWeight: FontWeight.bold)),
-                            SizedBox(width: size.width * 0.05),
-                            SizedBox(
-                              height: size.height * 0.08,
-                              width: size.height * 0.08,
-                              child: IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    hours++;
-                                  });
-                                },
-                                icon: const Icon(Icons.plus_one),
-                                style: ButtonStyle(
-                                    side: const WidgetStatePropertyAll(
-                                        BorderSide(
-                                            color: Color.fromARGB(
-                                                255, 30, 60, 100))),
-                                    backgroundColor:
-                                        const WidgetStatePropertyAll(
-                                            Color.fromARGB(255, 215, 230, 245)),
-                                    foregroundColor:
-                                        const WidgetStatePropertyAll(
-                                            Color.fromARGB(255, 30, 60, 100)),
-                                    shape: WidgetStatePropertyAll(
-                                        RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(15)))),
-                              ),
-                            )
-                          ],
-                        ),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Date début",
-                              style: TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.w600),
-                              textAlign: TextAlign.justify,
-                            ),
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: size.width * 0.4,
-                                  child: TextButton(
-                                    style: ButtonStyle(
-                                      side: WidgetStateProperty.all(
-                                          const BorderSide(
-                                              style: BorderStyle.solid,
-                                              color: Color.fromARGB(
-                                                  255, 30, 60, 100))),
-                                      elevation: WidgetStateProperty.all(6),
-                                      backgroundColor: WidgetStateProperty.all(
-                                          const Color.fromARGB(
-                                              255, 224, 227, 241)),
-                                      foregroundColor: WidgetStateProperty.all(
-                                          const Color.fromARGB(
-                                              255, 30, 60, 100)),
-                                      shape: WidgetStateProperty.all(
-                                        RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(15)),
-                                      ),
-                                    ),
-                                    onPressed: () async {
-                                      _selectedDate1 = await showDatePicker(
-                                        context: context,
-                                        firstDate: DateTime.now(),
-                                        lastDate: DateTime(2100),
-                                        initialDate:
-                                            _selectedDate1 ?? DateTime.now(),
-                                        currentDate: _selectedDate1,
-                                      );
-                                      setState(() {
-                                        if (_selectedDate1 != null) {
-                                          formattedDate1 =
-                                              DateFormat('dd/MM/yyyy')
-                                                  .format(_selectedDate1!);
-                                          dateContr1.text = formattedDate1;
-                                          year = _selectedDate1!.year;
-                                          switch (_selectedDate1!.month) {
-                                            case (1):
-                                              month = 'Janvier';
-                                            case (2):
-                                              month = 'Février';
-                                            case (3):
-                                              month = 'Mars';
-                                            case (4):
-                                              month = 'Avril';
-                                            case (5):
-                                              month = 'May';
-                                            case (6):
-                                              month = 'Juin';
-                                            case (7):
-                                              month = 'Juillet';
-                                            case (8):
-                                              month = 'Aôut';
-                                            case (9):
-                                              month = 'Septembre';
-                                            case (10):
-                                              month = 'Octobre';
-                                            case (11):
-                                              month = 'Novembre';
-                                            case (12):
-                                              month = 'Decembre';
-                                          }
-                                        }
-                                      });
-                                    },
-                                    child: Text(
-                                      formattedDate1.isEmpty
-                                          ? "jj / mm / aaaa"
-                                          : formattedDate1,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 18),
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      formattedDate1 = "";
-                                      _selectedDate1 = null;
-                                    });
-                                  },
-                                  icon: const Icon(
-                                    IconlyBold.delete,
-                                    color: Colors.red,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: size.width * 0.05),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              "Date fin",
-                              style: TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.w600),
-                              textAlign: TextAlign.justify,
-                            ),
-                            Row(
-                              children: [
-                                SizedBox(
-                                  width: size.width * 0.4,
-                                  child: TextButton(
-                                    style: ButtonStyle(
-                                      side: WidgetStateProperty.all(
-                                          const BorderSide(
-                                              style: BorderStyle.solid,
-                                              color: Color.fromARGB(
-                                                  255, 30, 60, 100))),
-                                      elevation: WidgetStateProperty.all(6),
-                                      backgroundColor: WidgetStateProperty.all(
-                                          const Color.fromARGB(
-                                              255, 224, 227, 241)),
-                                      foregroundColor: WidgetStateProperty.all(
-                                          const Color.fromARGB(
-                                              255, 30, 60, 100)),
-                                      shape: WidgetStateProperty.all(
-                                        RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(15)),
-                                      ),
-                                    ),
-                                    onPressed: () async {
-                                      _selectedDate2 = await showDatePicker(
-                                        context: context,
-                                        firstDate: DateTime.now(),
-                                        lastDate: DateTime(2100),
-                                        initialDate:
-                                            _selectedDate2 ?? DateTime.now(),
-                                        currentDate: _selectedDate2,
-                                      );
-                                      setState(() {
-                                        if (_selectedDate2 != null) {
-                                          formattedDate2 =
-                                              DateFormat('dd/MM/yyyy')
-                                                  .format(_selectedDate2!);
-                                          dateContr2.text = formattedDate2;
-                                          calculateDays(
-                                              _selectedDate1!, _selectedDate2!);
-                                        }
-                                      });
-                                    },
-                                    child: Text(
-                                      formattedDate2.isEmpty
-                                          ? "jj / mm / aaaa"
-                                          : formattedDate2,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 18),
-                                    ),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      formattedDate2 = "";
-                                      _selectedDate2 = null;
-                                    });
-                                  },
-                                  icon: const Icon(
-                                    IconlyBold.delete,
-                                    color: Colors.red,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        if (formattedDate1.isNotEmpty &&
-                            formattedDate2.isNotEmpty)
-                          Padding(
-                            padding: EdgeInsets.only(top: size.width * 0.07),
-                            child: Text(
-                              "Nombre de jours : ${calculateDays(_selectedDate1!, _selectedDate2!)}",
-                              style: const TextStyle(
-                                  fontSize: 20, fontWeight: FontWeight.w600),
-                              textAlign: TextAlign.justify,
-                            ),
-                          ),
-                      ],
-                    ),
-              SizedBox(height: size.height * 0.04),
-              Center(
-                child: Container(
-                  margin: const EdgeInsetsDirectional.only(top: 5),
-                  width: size.width * 0.4,
-                  height: 60,
-                  child: TextButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          _handleSubmit();
-                        }
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color.fromARGB(255, 215, 230, 245),
+        foregroundColor: const Color.fromARGB(255, 30, 60, 100),
+        onPressed: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (BuildContext context) {
+            return const AddPenalty();
+          }));
+        },
+        child: const Icon(Icons.add),
+      ),
+      body: Column(
+        children: [
+          SizedBox(
+            height: size.width * 0.02,
+          ),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('User')
+                .where('role', isEqualTo: 'employee')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: Platform.isAndroid
+                      ? const CircularProgressIndicator(
+                          color: Color.fromARGB(255, 30, 60, 100),
+                        )
+                      : const CupertinoActivityIndicator(),
+                );
+              }
+              final employees = snapshot.data!.docs;
+              return SizedBox(
+                width: size.width * 0.8,
+                child: DropdownButtonFormField<String>(
+                  value: _selectedEmployee,
+                  decoration: const InputDecoration(
+                    labelText: 'Employé',
+                  ),
+                  items: employees.map((employee) {
+                    return DropdownMenuItem<String>(
+                      onTap: () {
+                        _selectedId = employee['id'];
                       },
-                      style: ButtonStyle(
-                        elevation: WidgetStateProperty.all(10),
-                        backgroundColor: WidgetStateProperty.all(
-                            const Color.fromARGB(255, 30, 60, 100)),
-                        foregroundColor: WidgetStateProperty.all(Colors.white),
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                        ),
-                      ),
-                      child: Text("Valider",
-                          style: TextStyle(fontSize: size.width * 0.05))),
+                      value: '${employee['Nom']} ${employee['Prénom']}',
+                      child: Text('${employee['Nom']} ${employee['Prénom']}'),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedEmployee = value;
+                    });
+                  },
+                ),
+              );
+            },
+          ),
+          SizedBox(
+            height: size.height * 0.02,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              SizedBox(
+                width: size.width * 0.3,
+                child: DropdownButtonFormField<int>(
+                  value: _selectedYear,
+                  decoration: const InputDecoration(
+                    labelText: 'Année',
+                  ),
+                  items: years.map((year) {
+                    return DropdownMenuItem<int>(
+                      value: year,
+                      child: Text('$year'),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedYear = value!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: size.width * 0.3,
+                child: DropdownButtonFormField<String>(
+                  value: _selectedMonth,
+                  decoration: const InputDecoration(
+                    labelText: 'Mois',
+                  ),
+                  items: months.map((month) {
+                    return DropdownMenuItem<String>(
+                      value: month,
+                      child: Text(month),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedMonth = value!;
+                    });
+                  },
                 ),
               ),
             ],
           ),
-        ),
+          SizedBox(
+            height: size.height * 0.02,
+          ),
+          Expanded(
+            child: _selectedId == null
+                ? const Center(
+                    child: Text(
+                      "Veuillez sélectionner un employé",
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                          color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('Penalties')
+                        .where('employeeId', isEqualTo: _selectedId)
+                        .where('year', isEqualTo: _selectedYear)
+                        .where('month', isEqualTo: _selectedMonth)
+                        .snapshots(),
+                    builder: (content, snapshots) {
+                      if (snapshots.connectionState ==
+                          ConnectionState.waiting) {
+                        return Center(
+                          child: Platform.isAndroid
+                              ? const CircularProgressIndicator(
+                                  color: Color.fromARGB(255, 30, 60, 100),
+                                )
+                              : const CupertinoActivityIndicator(),
+                        );
+                      }
+                      final docs = snapshots.data?.docs;
+                      if (docs == null || docs.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            "Rien à afficher",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                                color: Colors.grey),
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      }
+                      return SizedBox(
+                        child: ListView.separated(
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(),
+                            itemCount: snapshots.data!.docs.length,
+                            itemBuilder: (context, index) {
+                              var data = snapshots.data!.docs[index].data()
+                                  as Map<String, dynamic>;
+                              return Container(
+                                margin: EdgeInsets.all(size.width * 0.02),
+                                decoration: BoxDecoration(
+                                    color: const Color.fromARGB(
+                                        255, 215, 230, 245),
+                                    borderRadius: BorderRadius.circular(15),
+                                    border: Border.all(
+                                        color: const Color.fromARGB(
+                                            255, 30, 60, 100))),
+                                child: data['type'] == 'hours'
+                                    ? ListTile(
+                                        title: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text('Date: ${data['date']}'),
+                                            Text('${data['hours']} heures'),
+                                            data['reason'].isEmpty
+                                                ? const SizedBox.shrink()
+                                                : Text(
+                                                    'Raison: ${data['reason']}')
+                                          ],
+                                        ),
+                                      )
+                                    : ListTile(
+                                        title: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                                'Date début: ${data['date1']}'),
+                                            Text(
+                                                'Date début: ${data['date2']}'),
+                                            data['reason'].isEmpty
+                                                ? const SizedBox.shrink()
+                                                : Text(
+                                                    'Raison: ${data['reason']}')
+                                          ],
+                                        ),
+                                      ),
+                              );
+                            }),
+                      );
+                    }),
+          )
+        ],
       ),
     );
-  }
-
-  Future<UserData> getCurrentUserData() async {
-    final DocumentSnapshot<Map<String, dynamic>> snapshot =
-        await FirebaseFirestore.instance
-            .collection('User')
-            .doc(_selectedEmployee)
-            .get();
-
-    if (!snapshot.exists) {
-      throw Exception('User data not found in Firestore.');
-    }
-
-    final UserData userData = UserData();
-    userData.fromMap(snapshot.data() as Map<String, dynamic>);
-    return userData;
-  }
-
-  Future<void> _saveDataH() async {
-    final userData = await getCurrentUserData();
-    String idP = generateId();
-    String idN = generateId();
-    int a;
-    double b = userData.sanctions + (hours / 8);
-    if (b - b.truncate() < 0.5) {
-      a = b.truncate();
-    } else {
-      a = b.ceil();
-    }
-    try {
-      FirebaseFirestore.instance.collection('Penalties').doc(idP).set({
-        'id': idP,
-        'employeeId': _selectedEmployee,
-        'date': formattedDate,
-        'hours': hours,
-        'year': year,
-        'month': month
-      });
-      FirebaseFirestore.instance.collection('UserNotification').doc(idN).set({
-        'id': idN,
-        'userID': _selectedEmployee,
-        'timestamp': DateTime.now(),
-        'date': today,
-        'content':
-            'Une Pénalité a été soumise le "$formattedDate" ($hours heures)',
-        'isRead': false,
-      });
-      FirebaseFirestore.instance
-          .collection('User')
-          .doc(_selectedEmployee)
-          .update({
-        'Sanctions': userData.sanctions + (hours / 8),
-        'resteConge': userData.soldeConge +
-            userData.soldeAnneePrec -
-            userData.congePris -
-            a
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Succés'),
-        ),
-      );
-      Navigator.of(context).pop();
-    } catch (e) {
-      print(e);
-    }
-  }
-
-  Future<void> _saveDataJ() async {
-    final userData = await getCurrentUserData();
-    String idP = generateId();
-    String idN = generateId();
-    try {
-      FirebaseFirestore.instance.collection('Penalties').doc(idP).set({
-        'id': idP,
-        'employeeId': _selectedEmployee,
-        'date': formattedDate,
-        'hours': hours,
-        'year': year,
-        'month': month
-      });
-      FirebaseFirestore.instance.collection('UserNotification').doc(idN).set({
-        'id': idN,
-        'userID': _selectedEmployee,
-        'timestamp': DateTime.now(),
-        'date': today,
-        'content':
-            'Une Pénalité a été soumise le "$formattedDate" ($hours heures)',
-        'isRead': false,
-      });
-      FirebaseFirestore.instance
-          .collection('User')
-          .doc(_selectedEmployee)
-          .update({
-        'Sanctions': userData.sanctions +
-            calculateDays(_selectedDate1!, _selectedDate2!),
-        'resteConge': userData.soldeConge +
-            userData.soldeAnneePrec -
-            userData.congePris -
-            calculateDays(_selectedDate1!, _selectedDate2!)
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Succés'),
-        ),
-      );
-      Navigator.of(context).pop();
-    } catch (e) {
-      print(e);
-    }
-  }
-
-  Future<void> _handleSubmit() async {
-    if (_selectedEmployee != null && _selectedType != null) {
-      switch (_selectedType) {
-        case ('Heure'):
-          if (formattedDate.isEmpty || hours == 0) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Veuillez séléctionner la date et l\'heure'),
-              ),
-            );
-          } else {
-            if (isHoliday(_selectedDate!) || isWeekend(_selectedDate!)) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text(
-                      'Les pénalités ne peuvent pas être soumises pour le week-end ou les jours feriés.'),
-                ),
-              );
-            } else {
-              if (hours > 8) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Le maximum des heures est 8.'),
-                  ),
-                );
-              } else {
-                _saveDataH();
-              }
-            }
-          }
-        case ('Jour'):
-          if (formattedDate.isEmpty || formattedDate2.isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Veuillez séléctionner les dates'),
-              ),
-            );
-          } else {
-            _saveDataJ();
-          }
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Veuillez séléctionner l\'employé et le type de pénalité.'),
-        ),
-      );
-    }
   }
 }
