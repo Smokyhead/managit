@@ -1,6 +1,11 @@
+// ignore_for_file: avoid_print, use_build_context_synchronously
+
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:managit/pages/admin/add_penalty.dart';
 
 class AbsenceManagement extends StatefulWidget {
   const AbsenceManagement({super.key});
@@ -10,131 +15,236 @@ class AbsenceManagement extends StatefulWidget {
 }
 
 class _AbsenceManagementState extends State<AbsenceManagement> {
-  final _formKey = GlobalKey<FormState>();
   String? _selectedEmployee;
-  DateTime? _selectedDate;
-  final TextEditingController _dateController = TextEditingController();
+  String? _selectedId;
+  int _selectedYear = DateTime.now().year;
+  String _selectedMonth = 'Janvier';
+  List<int> years = [2024, 2025, 2026];
+  List<String> months = [
+    'Janvier',
+    'Février',
+    'Mars',
+    'Avril',
+    'Mai',
+    'Juin',
+    'Juillet',
+    'Août',
+    'Septembre',
+    'Octobre',
+    'Novembre',
+    'Décembre'
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedId = null;
+  }
 
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('User')
-                    .where('role', isEqualTo: 'employee')
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
-                  }
-                  final employees = snapshot.data!.docs;
-                  return DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                      labelText: 'Séléctionner un employé',
-                    ),
-                    items: employees.map((employee) {
-                      return DropdownMenuItem<String>(
-                        value: employee.id,
-                        child: Text('${employee['Nom']} ${employee['Prénom']}'),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedEmployee = value;
-                      });
-                    },
-                    validator: (value) =>
-                        value == null ? 'Veuillez séléctionner un employé' : null,
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _dateController,
-                decoration: const InputDecoration(
-                  labelText: 'Séléctionnez la date',
-                ),
-                readOnly: true,
-                onTap: () async {
-                  DateTime? pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2101),
-                  );
-                  if (pickedDate != null) {
-                    setState(() {
-                      _selectedDate = pickedDate;
-                      _dateController.text =
-                          DateFormat('dd/MM/yyyy').format(pickedDate);
-                    });
-                  }
-                },
-                validator: (value) =>
-                    value!.isEmpty ? 'Veuillez séléctionnez une date' : null,
-              ),
-              const SizedBox(height: 16),
-              Center(
-                child: Container(
-                  margin: const EdgeInsetsDirectional.only(top: 5),
-                  width: size.width * 0.4,
-                  height: 60,
-                  child: TextButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          _saveAbsence();
-                        }
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color.fromARGB(255, 215, 230, 245),
+        foregroundColor: const Color.fromARGB(255, 30, 60, 100),
+        onPressed: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (BuildContext context) {
+            return const AddPenalty();
+          }));
+        },
+        child: const Icon(Icons.add),
+      ),
+      body: Column(
+        children: [
+          SizedBox(
+            height: size.width * 0.02,
+          ),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('User')
+                .where('role', isEqualTo: 'employee')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
+                  child: Platform.isAndroid
+                      ? const CircularProgressIndicator(
+                          color: Color.fromARGB(255, 30, 60, 100),
+                        )
+                      : const CupertinoActivityIndicator(),
+                );
+              }
+              final employees = snapshot.data!.docs;
+              return SizedBox(
+                width: size.width * 0.8,
+                child: DropdownButtonFormField<String>(
+                  value: _selectedEmployee,
+                  decoration: const InputDecoration(
+                    labelText: 'Employé',
+                  ),
+                  items: employees.map((employee) {
+                    return DropdownMenuItem<String>(
+                      onTap: () {
+                        _selectedId = employee['id'];
                       },
-                      style: ButtonStyle(
-                        elevation: WidgetStateProperty.all(10),
-                        backgroundColor: WidgetStateProperty.all(
-                            const Color.fromARGB(255, 30, 60, 100)),
-                        foregroundColor: WidgetStateProperty.all(Colors.white),
-                        shape: WidgetStateProperty.all(
-                          RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                        ),
-                      ),
-                      child: Text("Valider",
-                          style: TextStyle(fontSize: size.width * 0.05))),
+                      value: '${employee['Nom']} ${employee['Prénom']}',
+                      child: Text('${employee['Nom']} ${employee['Prénom']}'),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedEmployee = value;
+                    });
+                  },
+                ),
+              );
+            },
+          ),
+          SizedBox(
+            height: size.height * 0.02,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              SizedBox(
+                width: size.width * 0.3,
+                child: DropdownButtonFormField<int>(
+                  value: _selectedYear,
+                  decoration: const InputDecoration(
+                    labelText: 'Année',
+                  ),
+                  items: years.map((year) {
+                    return DropdownMenuItem<int>(
+                      value: year,
+                      child: Text('$year'),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedYear = value!;
+                    });
+                  },
+                ),
+              ),
+              SizedBox(
+                width: size.width * 0.3,
+                child: DropdownButtonFormField<String>(
+                  value: _selectedMonth,
+                  decoration: const InputDecoration(
+                    labelText: 'Mois',
+                  ),
+                  items: months.map((month) {
+                    return DropdownMenuItem<String>(
+                      value: month,
+                      child: Text(month),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedMonth = value!;
+                    });
+                  },
                 ),
               ),
             ],
           ),
-        ),
+          SizedBox(
+            height: size.height * 0.02,
+          ),
+          Expanded(
+            child: _selectedId == null
+                ? const Center(
+                    child: Text(
+                      "Veuillez sélectionner un employé",
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 20,
+                          color: Colors.grey),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('Absence')
+                        .where('employeeId', isEqualTo: _selectedId)
+                        .where('year', isEqualTo: _selectedYear)
+                        .where('month', isEqualTo: _selectedMonth)
+                        .snapshots(),
+                    builder: (content, snapshots) {
+                      if (snapshots.connectionState ==
+                          ConnectionState.waiting) {
+                        return Center(
+                          child: Platform.isAndroid
+                              ? const CircularProgressIndicator(
+                                  color: Color.fromARGB(255, 30, 60, 100),
+                                )
+                              : const CupertinoActivityIndicator(),
+                        );
+                      }
+                      final docs = snapshots.data?.docs;
+                      if (docs == null || docs.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            "Rien à afficher",
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                                color: Colors.grey),
+                            textAlign: TextAlign.center,
+                          ),
+                        );
+                      }
+                      return SizedBox(
+                        child: ListView.separated(
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(),
+                            itemCount: snapshots.data!.docs.length,
+                            itemBuilder: (context, index) {
+                              var data = snapshots.data!.docs[index].data()
+                                  as Map<String, dynamic>;
+                              return Container(
+                                margin: EdgeInsets.all(size.width * 0.02),
+                                decoration: BoxDecoration(
+                                    color: const Color.fromARGB(
+                                        255, 215, 230, 245),
+                                    borderRadius: BorderRadius.circular(15),
+                                    border: Border.all(
+                                        color: const Color.fromARGB(
+                                            255, 30, 60, 100))),
+                                child: data['type'] == 'day'
+                                    ? ListTile(
+                                        title: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text('Date: ${data['date']}'),
+                                            const Text('1 jour')
+                                          ],
+                                        ),
+                                      )
+                                    : ListTile(
+                                        title: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                                'Date début: ${data['date1']}'),
+                                            Text(
+                                                'Date début: ${data['date2']}'),
+                                            Text(
+                                                'Nombre de jours: ${data['days']}')
+                                          ],
+                                        ),
+                                      ),
+                              );
+                            }),
+                      );
+                    }),
+          )
+        ],
       ),
     );
-  }
-
-  Future<void> _saveAbsence() async {
-    if (_selectedEmployee != null && _selectedDate != null) {
-      await FirebaseFirestore.instance.collection('Absences').add({
-        'employeeId': _selectedEmployee,
-        'date': _selectedDate,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Absence saved successfully')),
-      );
-
-      // Clear form
-      setState(() {
-        _selectedEmployee = null;
-        _selectedDate = null;
-        _dateController.clear();
-      });
-    }
   }
 }
